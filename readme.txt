@@ -45,7 +45,7 @@ SPIRAL&reg; account is required to use this plugin. If you have not already regi
 
 To enable plugin and see "WP Member Login by SPIRAL" menu added to the "Settings" menu below.  And then open this settings page, enter your SPIRAL-API token, authentication-form url and link settings.
 
-For more information see the [Plugin Manual for Japanese](https://stage-apl-support.pi-pe.co.jp/wpmls/) (or [English version](http://www.microsofttranslator.com/bv.aspx?from=&to=en&a=http://developer.pi-pe.co.jp/trial-navi/wpmls-manual.html) by Microsoft Translator).
+For more information see the [Plugin Manual for Japanese](https://stage-apl-support.pi-pe.co.jp/wpmls/) (or [English version](http://www.microsofttranslator.com/bv.aspx?from=&to=en&a=http://developer.pi-pe.co.jp/trial-navi/wpmls-manual.html) by Microsoft WPMLS_Translator).
 
 == Frequently Asked Questions ==
 

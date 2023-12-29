@@ -7,7 +7,7 @@
  * @author    PIPED BITS Co.,Ltd.
  */
 
-if (!class_exists('Spiral_Api')) :
+if (!class_exists('WPMLS_Spiral_Api')) :
 	/**
 	 *
 	 * SPIRAL API class.
@@ -15,7 +15,7 @@ if (!class_exists('Spiral_Api')) :
 	 * @package Spiral_Member_Login
 	 * @author  PIPED BITS Co.,Ltd.
 	 */
-	class Spiral_Api extends Spiral_Member_Login_Base
+	class WPMLS_Spiral_Api extends WPMLS_Spiral_Member_Login_Base
 	{
 
 		private $token 			= null;
@@ -83,10 +83,10 @@ if (!class_exists('Spiral_Api')) :
 			return $this->api_url;
 		}
 
-		public function login_area($area_title, $id = null, $key = null, $password = null)
+		public function login_area($wpmls_area_title, $id = null, $key = null, $password = null)
 		{
 			$parameters = array();
-			$parameters["my_area_title"] = $area_title;
+			$parameters["my_area_title"] = $wpmls_area_title;
 			$parameters["url_type"] = 2;
 
 			if ($id) {
@@ -105,10 +105,10 @@ if (!class_exists('Spiral_Api')) :
 			return $result;
 		}
 
-		public function logout_area($area_title, $session_id)
+		public function logout_area($wpmls_area_title, $session_id)
 		{
 			$parameters = array();
-			$parameters["my_area_title"] = $area_title;
+			$parameters["my_area_title"] = $wpmls_area_title;
 			$parameters["jsessionid"] = $session_id;
 
 			$this->_sign_params($parameters);
@@ -122,14 +122,14 @@ if (!class_exists('Spiral_Api')) :
 			}
 		}
 
-		public function get_area_status($area_title, $session_id)
+		public function get_area_status($wpmls_area_title, $session_id)
 		{
 			// To prevent on many request
 			if ($this->area_status !== null) {
 				return $this->area_status;
 			}
 			$parameters = array();
-			$parameters["my_area_title"] = $area_title;
+			$parameters["my_area_title"] = $wpmls_area_title;
 			$parameters["jsessionid"] = $session_id;
 
 			$this->_sign_params($parameters);
@@ -144,10 +144,10 @@ if (!class_exists('Spiral_Api')) :
 			}
 		}
 
-		public function get_area_mypage($area_title, $session_id, $mypage_id)
+		public function get_area_mypage($wpmls_area_title, $session_id, $mypage_id)
 		{
 			$parameters = array();
-			$parameters["my_area_title"] = $area_title;
+			$parameters["my_area_title"] = $wpmls_area_title;
 			$parameters["jsessionid"] = $session_id;
 			$parameters["my_page_id"] = $mypage_id;
 			$parameters["url_type"] = 2;
@@ -178,10 +178,10 @@ if (!class_exists('Spiral_Api')) :
 			return $convertedArray;
 		}
 
-		public function get_user_record_value($db_title, $identification_key, $user_key)
+		public function get_user_record_value($db_title, $wpmls_identification_key, $user_key)
 		{
 			$parameters = array();
-			$parameters["search_condition"] = array(array("name" => $identification_key, "value" => $user_key, "operator" => "="));
+			$parameters["search_condition"] = array(array("name" => $wpmls_identification_key, "value" => $user_key, "operator" => "="));
 			$parameters["db_title"] = $db_title;
 			$columns = $this->get_db_columns($db_title);
 			$parameters["select_columns"] = $columns;
@@ -218,10 +218,10 @@ if (!class_exists('Spiral_Api')) :
 		}
 
 
-		public function get_user_record($db_title, $identification_key, $user_key)
+		public function get_user_record($db_title, $wpmls_identification_key, $user_key)
 		{
 			$parameters = array();
-			$parameters["search_condition"] = array(array("name" => $identification_key, "value" => $user_key, "operator" => "="));
+			$parameters["search_condition"] = array(array("name" => $wpmls_identification_key, "value" => $user_key, "operator" => "="));
 			$parameters["db_title"] = $db_title;
 			$columns = $this->get_db_columns($db_title);
 			$columnTypes = $this->get_db_columns_types($db_title);
@@ -264,7 +264,7 @@ if (!class_exists('Spiral_Api')) :
 			}
 		}
 
-		public function check_selectable_field($db_title, $identification_key, $user_key, $field_name)
+		public function check_selectable_field($db_title, $wpmls_identification_key, $user_key, $field_name)
 		{
 			$allow_select_fields = ["mm_alternative", "mm_multiple", "mm_multiple128","mm_integer"];
 
@@ -336,7 +336,7 @@ if (!class_exists('Spiral_Api')) :
 			}
 		}
 
-		public function get_extraction_rule($area_title, $db_title, $session_id, $id, $select_name)
+		public function get_extraction_rule($wpmls_area_title, $db_title, $session_id, $id, $select_name)
 		{
 			$parameters = array();
 			$parameters["search_condition"] = array(array("name" => "id", "value" => $id, "operator" => "="));
@@ -354,7 +354,7 @@ if (!class_exists('Spiral_Api')) :
 			}
 		}
 
-		public function get_table_data($area_title, $session_id, $search_title, $options = null)
+		public function get_table_data($wpmls_area_title, $session_id, $search_title, $options = null)
 		{
 			// If already has user data
 			if ($this->user_data != null) {
@@ -364,7 +364,7 @@ if (!class_exists('Spiral_Api')) :
 			if ($options && is_array($options)) {
 				$parameters = $options;
 			}
-			$parameters["my_area_title"] = $area_title;
+			$parameters["my_area_title"] = $wpmls_area_title;
 			$parameters["jsessionid"] = $session_id;
 			$parameters["search_title"] = $search_title;
 

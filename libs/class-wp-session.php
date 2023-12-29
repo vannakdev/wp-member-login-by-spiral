@@ -16,7 +16,7 @@
  * @package WordPress
  * @since   3.7.0
  */
-final class WP_Session extends Recursive_ArrayAccess implements Iterator, Countable {
+final class WPMLS_Session extends WPMLS_Recursive_ArrayAccess implements Iterator, Countable {
 	/**
 	 * ID of the current session.
 	 *
@@ -41,7 +41,7 @@ final class WP_Session extends Recursive_ArrayAccess implements Iterator, Counta
 	/**
 	 * Singleton instance.
 	 *
-	 * @var bool|WP_Session
+	 * @var bool|WPMLS_Session
 	 */
 	private static $instance = false;
 
@@ -50,7 +50,7 @@ final class WP_Session extends Recursive_ArrayAccess implements Iterator, Counta
 	 *
 	 * @param bool $session_id Session ID from which to populate data.
 	 *
-	 * @return bool|WP_Session
+	 * @return bool|WPMLS_Session
 	 */
 	public static function get_instance() {
 		if ( ! self::$instance ) {

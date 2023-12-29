@@ -14,7 +14,7 @@ if (!class_exists('Spiral_Member_Login')) :
 	 * @package Spiral_Member_Login
 	 * @author  PIPED BITS Co.,Ltd.
 	 */
-	class Spiral_Member_Login extends Spiral_Member_Login_Base
+	class Spiral_Member_Login extends WPMLS_Spiral_Member_Login_Base
 	{
 
 		/**
@@ -117,7 +117,7 @@ if (!class_exists('Spiral_Member_Login')) :
 		/**
 		 * SPIRAL API
 		 */
-		public $spiral;
+		public $spiral2;
 
 		/**
 		 * Initialize the plugin by setting localization, filters, and administration functions.
@@ -136,7 +136,6 @@ if (!class_exists('Spiral_Member_Login')) :
 			add_action('admin_menu', array(&$this, 'admin_menu'));
 			add_action('admin_enqueue_scripts', array(&$this, 'enqueue_admin_styles'));
 			add_action('admin_enqueue_scripts', array(&$this, 'enqueue_admin_scripts'));
-			add_action('admin_post_save_version_options', array(&$this, 'save_version_options'));
 			add_action('wp_enqueue_scripts', array(&$this, 'enqueue_styles'));
 			add_action('wp_enqueue_scripts', array(&$this, 'enqueue_scripts'));
 			add_action('widgets_init', array(&$this, 'widgets_init'));
@@ -161,23 +160,60 @@ if (!class_exists('Spiral_Member_Login')) :
 
 
 			// setup session
-			$this->session 			= new Spiral_Member_Login_Session();
+			$this->session 			= new WPMLS_Spiral_Member_Login_Session();
 
-			$api_token_key 			=  	$this->wpfws_dos_soar($this->get_option('api_token'), SECURE_AUTH_KEY);
+			$api_token_key 			=  	$this->wpfws_dos_soar($this->get_option('wpmls_api_token'), SECURE_AUTH_KEY);
 
-			$app_id					=	$this->get_option('member_app_id');
-			$db_id	 				=	$this->get_option('member_db_id');
-			$site_id 				= 	$this->get_option('site_id');
-			$authentication_id 		= 	$this->get_option('authentication_id');
+			$app_id					=	$this->get_option('wpmls_member_app_id');
+			$db_id	 				=	$this->get_option('wpmls_member_db_id');
+			$wpmls_site_id 				= 	$this->get_option('wpmls_site_id');
+			$wpmls_authentication_id 		= 	$this->get_option('wpmls_authentication_id');
 
 			$this->spiral2 			= 	new SpiralPlatform_Api($api_token_key);
-			$this->spiral2->set_options($app_id, $db_id, $site_id, $authentication_id);
+			$this->spiral2->set_options($app_id, $db_id, $wpmls_site_id, $wpmls_authentication_id);
 
 
-			$this->translator 			= 	new Translator();
+			$this->translator 			= 	new WPMLS_Translator();
 
 			if ($this->is_settings_imcomplete())
 				return null;
+			
+			$this->wpmls_modify_option_keys();
+		}
+
+
+		function wpmls_modify_option_keys()
+		{
+			$options = $this->get_options();
+			$mapping = [
+				"api_token" => "wpmls_api_token",
+				"api_token_secret" => "wpmls_api_token_secret",
+				"auth_form_url" => "wpmls_auth_form_url",
+				"authentication_id" => "wpmls_authentication_id",
+				"member_db_id" => "wpmls_member_db_id",
+				"member_app_id" => "wpmls_member_app_id",
+				"site_id" => "wpmls_site_id",
+				"default_name_key" => "wpmls_default_name_key",
+				"login_id_label_jp" => "wpmls_login_id_label_jp",
+				"login_id_label_en" => "wpmls_login_id_label_en",
+				"register_url" => "wpmls_register_url",
+				"lostpassword_url" => "wpmls_register_url",
+				"member_domain_name" => "wpmls_member_domain_name",
+				"member_logout_url" => "wpmls_member_domain_name",
+				"profile_page_id" => "wpmls_profile_page_id",
+				"resetpass_page_id" => "wpmls_resetpass_page_id",
+				"withdrawal_page_id" => "wpmls_withdrawal_page_id",
+				"related_web" => "wpmls_related_web",
+				"is_enable" => "wpmls_is_enable",
+				"version" => "version"
+			];
+
+			$new_keys = array_map(function ($key) use ($mapping) {
+				return $mapping[$key];
+			}, array_keys($options));
+
+			$new_option = array_combine($new_keys, $options);
+			update_option($this->options_key, $new_option);
 		}
 
 
@@ -297,25 +333,6 @@ if (!class_exists('Spiral_Member_Login')) :
 			}
 		}
 
-
-
-		/**
-		 * Save Spiral Version Option
-		 */
-		function save_version_options()
-		{
-
-			check_admin_referer('sml_options_verify');
-
-			$recipe_opts                                      =   get_option('r_opts');
-			$recipe_opts['rating_login_required']             =   absint($_POST['r_rating_login_required']);
-			$recipe_opts['recipe_submission_login_required']  =   absint($_POST['r_submission_login_required']);
-
-			update_option('r_opts', $recipe_opts);
-			wp_redirect_admin_locations();
-		}
-
-
 		/**
 		 * Register and enqueue public-facing style sheet.
 		 *
@@ -355,81 +372,85 @@ if (!class_exists('Spiral_Member_Login')) :
 			add_settings_section('login_setting', __($this->translator->sml_translate('login_setting'), self::domain), '__return_false', $this->options_key);
 			add_settings_section(
 				'web',
-				__($this->translator->sml_translate('relate_web_no_ashiato'),
-				self::domain),
+				__(
+					$this->translator->sml_translate('relate_web_no_ashiato'),
+					self::domain
+				),
 				'__return_false',
 				$this->options_key
 			);
 			// api	
-			add_settings_field('api_token', __($this->translator->sml_translate('api_key'), self::domain), array(&$this, 'settings_field_api_token'), $this->options_key, 'api', ["class" => "basic-config-label api-token"]);
+			add_settings_field('wpmls_api_token', __($this->translator->sml_translate('api_key'), self::domain), array(&$this, 'settings_field_api_token'), $this->options_key, 'api', ["class" => "basic-config-label api-token"]);
 			// auth
-			add_settings_field('auth_form_url', __($this->translator->sml_translate('authentication_form_url'), self::domain), array(&$this, 'settings_field_auth_form_url'), $this->options_key, 'auth', ["class" => "basic-config-label"]);
-			add_settings_field('identification_key', __($this->translator->sml_translate('app_id'), self::domain), array(&$this, 'settings_field_identification_key'), $this->options_key, 'auth', ["class" => ""]);
-			add_settings_field('member_db_id', __($this->translator->sml_translate('db_id'), self::domain), array(&$this, 'settings_field_member_db_id'), $this->options_key, 'auth', ["class" => ""]);
-			add_settings_field('site_id', __($this->translator->sml_translate('site_id'), self::domain), array(&$this, 'settings_field_site_id'), $this->options_key, 'auth', ["class" => ""]);
-			add_settings_field('authentication_id', __($this->translator->sml_translate('authentication_area_id'), self::domain), array(&$this, 'settings_field_authentication_id'), $this->options_key, 'auth', ["class" => ""]);
+			add_settings_field('wpmls_auth_form_url', __($this->translator->sml_translate('authentication_form_url'), self::domain), array(&$this, 'settings_field_auth_form_url'), $this->options_key, 'auth', ["class" => "basic-config-label"]);
+			add_settings_field('wpmls_identification_key', __($this->translator->sml_translate('app_id'), self::domain), array(&$this, 'settings_field_identification_key'), $this->options_key, 'auth', ["class" => ""]);
+			add_settings_field('wpmls_member_db_id', __($this->translator->sml_translate('db_id'), self::domain), array(&$this, 'settings_field_member_db_id'), $this->options_key, 'auth', ["class" => ""]);
+			add_settings_field('wpmls_site_id', __($this->translator->sml_translate('wpmls_site_id'), self::domain), array(&$this, 'settings_field_site_id'), $this->options_key, 'auth', ["class" => ""]);
+			add_settings_field('wpmls_authentication_id', __($this->translator->sml_translate('authentication_area_id'), self::domain), array(&$this, 'settings_field_authentication_id'), $this->options_key, 'auth', ["class" => ""]);
 			// link
-			add_settings_field('register_url', __($this->translator->sml_translate('registration_form_url'), self::domain), array(&$this, 'settings_field_register_url'), $this->options_key, 'link', ["class" => "basic-config-label link-setting"]);
-			add_settings_field('lostpassword_url', __($this->translator->sml_translate('lost_password_page_url'), self::domain), array(&$this, 'settings_field_lostpassword_url'), $this->options_key, 'link', ["class" => "basic-config-label link-setting"]);
-			add_settings_field('profile_page_id', __($this->translator->sml_translate('profile_page_path'), self::domain), array(&$this, 'settings_field_profile_page_id'), $this->options_key, 'link', ["class" => "basic-config-label link-setting"]);
-			add_settings_field('resetpass_page_id', __($this->translator->sml_translate('reset_password_page_path'), self::domain), array(&$this, 'settings_field_resetpass_page_id'), $this->options_key, 'link', ["class" => "basic-config-label link-setting"]);
-			add_settings_field('withdrawal_page_id', __($this->translator->sml_translate('withdrawal_page_path'), self::domain), array(&$this, 'settings_field_withdrawal_page_id'), $this->options_key, 'link', ["class" => "basic-config-label link-setting"]);
+			add_settings_field('wpmls_register_url', __($this->translator->sml_translate('registration_form_url'), self::domain), array(&$this, 'settings_field_register_url'), $this->options_key, 'link', ["class" => "basic-config-label link-setting"]);
+			add_settings_field('wpmls_lostpassword_url', __($this->translator->sml_translate('lost_password_page_url'), self::domain), array(&$this, 'settings_field_lostpassword_url'), $this->options_key, 'link', ["class" => "basic-config-label link-setting"]);
+			add_settings_field('wpmls_profile_page_id', __($this->translator->sml_translate('profile_page_path'), self::domain), array(&$this, 'settings_field_profile_page_id'), $this->options_key, 'link', ["class" => "basic-config-label link-setting"]);
+			add_settings_field('wpmls_resetpass_page_id', __($this->translator->sml_translate('reset_password_page_path'), self::domain), array(&$this, 'settings_field_resetpass_page_id'), $this->options_key, 'link', ["class" => "basic-config-label link-setting"]);
+			add_settings_field('wpmls_withdrawal_page_id', __($this->translator->sml_translate('withdrawal_page_path'), self::domain), array(&$this, 'settings_field_withdrawal_page_id'), $this->options_key, 'link', ["class" => "basic-config-label link-setting"]);
 
 			// Logout
-			add_settings_field('logout_url', __($this->translator->sml_translate('after_logout_page_url_setting'), self::domain), array(&$this, 'settings_field_logout_url'), $this->options_key, 'logout', ["class" => ""]);
-			add_settings_field('login_id_label', __($this->translator->sml_translate('login_form_label'), self::domain), array(&$this, 'settings_field_login_id_label'), $this->options_key, 'login_setting', ["class" => "basic-config-label"]);
+			add_settings_field('wpmls_logout_url', __($this->translator->sml_translate('after_logout_page_url_setting'), self::domain), array(&$this, 'settings_field_logout_url'), $this->options_key, 'logout', ["class" => ""]);
+			add_settings_field('wpmls_login_id_label', __($this->translator->sml_translate('login_form_label'), self::domain), array(&$this, 'settings_field_login_id_label'), $this->options_key, 'login_setting', ["class" => "basic-config-label"]);
 
 			// userprop
-			add_settings_field('default_name_key', __($this->translator->sml_translate('user_name_field'), self::domain), array(&$this, 'settings_field_default_name_key'), $this->options_key, 'login_setting', ["class" => "basic-config-label"]);
-			add_settings_field('login_id_label', __($this->translator->sml_translate('login_form_label'), self::domain), array(&$this, 'settings_field_login_id_label'), $this->options_key, 'login_setting', ["class" => "basic-config-label"]);
+			add_settings_field('wpmls_default_name_key', __($this->translator->sml_translate('user_name_field'), self::domain), array(&$this, 'settings_field_default_name_key'), $this->options_key, 'login_setting', ["class" => "basic-config-label"]);
+			add_settings_field('wpmls_login_id_label', __($this->translator->sml_translate('login_form_label'), self::domain), array(&$this, 'settings_field_login_id_label'), $this->options_key, 'login_setting', ["class" => "basic-config-label"]);
 			// Web section
-			add_settings_field('is_enable', $this->translator->sml_translate('use_this_function'), array(&$this, 'settings_field_is_enable'), $this->options_key, 'web', ["class" => "basic-config-label"]);
+			add_settings_field('wpmls_is_enable', $this->translator->sml_translate('use_this_function'), array(&$this, 'settings_field_is_enable'), $this->options_key, 'web', ["class" => "basic-config-label"]);
 			add_settings_field('param_name', $this->translator->sml_translate('parameter_name'), array(&$this, 'settings_field_param_name'), $this->options_key, 'web', ["class" => "basic-config-label"]);
 			add_settings_field('filed_name', $this->translator->sml_translate('field_name'), array(&$this, 'settings_field_filed_name'), $this->options_key, 'web', ["class" => "basic-config-label"]);
-			
 		}
-		
-		public function settings_field_is_enable(){
-			$is_enable  = isset(get_option($this->options_key)['related_web']) ? get_option($this->options_key)['related_web']['is_enable'] : false ;
-			$is_checked = $is_enable ? 'checked' : '';
-		?>
+
+		public function settings_field_is_enable()
+		{
+			$wpmls_is_enable  = isset(get_option($this->options_key)['wpmls_related_web']) ? get_option($this->options_key)['wpmls_related_web']['wpmls_is_enable'] : false;
+			$is_checked = $wpmls_is_enable ? 'checked' : '';
+?>
 			<div>
-				<input id="is_enable" type="checkbox" pattern="https?://.+" name="is_enable" type="text" class="sml_url_field sml_member_logout_url_field advance-config" value="" <?php  echo $is_checked; ?>/>
+				<input id="wpmls_is_enable" type="checkbox" pattern="https?://.+" name="wpmls_is_enable" type="text" class="sml_url_field sml_member_logout_url_field advance-config" value="" <?php echo $is_checked; ?> />
 			</div>
 			<script>
-				const checkbox = document.querySelector("#is_enable");
-				
+				const checkbox = document.querySelector("#wpmls_is_enable");
+
 				checkbox.addEventListener("click", function() {
-				  if (checkbox.checked) {
-					  	checkbox.value = 1;
-				  } else {
-					 checkbox.value = 0;
-				  }
+					if (checkbox.checked) {
+						checkbox.value = 1;
+					} else {
+						checkbox.value = 0;
+					}
 				});
 			</script>
-			
+
 		<?php
 		}
-		public function settings_field_param_name(){
-			$param_name = isset(get_option($this->options_key)['related_web']['atts']) ? get_option($this->options_key)['related_web']['atts']['param_name'] : '';
+		public function settings_field_param_name()
+		{
+			$param_name = isset(get_option($this->options_key)['wpmls_related_web']['atts']) ? get_option($this->options_key)['wpmls_related_web']['atts']['param_name'] : '';
 		?>
 			<div>
 				<div class="" id="web_id">
 					<input name="param_name" type="text" class="sml_login_id_label_jp basic_config" value="<?php echo $param_name; ?>" />
 				</div>
 			</div>
-			
+
 		<?php
 		}
-		public function settings_field_filed_name(){
-			$field_name = isset(get_option($this->options_key)['related_web']['atts']) ? get_option($this->options_key)['related_web']['atts']['field_name'] : '';
+		public function settings_field_filed_name()
+		{
+			$field_name = isset(get_option($this->options_key)['wpmls_related_web']['atts']) ? get_option($this->options_key)['wpmls_related_web']['atts']['field_name'] : '';
 		?>
 			<div>
 				<div class="" id="web_id">
 					<input name="field_name" type="text" class="sml_login_id_label_en basic_config" value="<?php echo $field_name; ?>" />
 				</div>
 			</div>
-			
+
 		<?php
 		}
 
@@ -441,8 +462,8 @@ if (!class_exists('Spiral_Member_Login')) :
 		 */
 		public function widgets_init()
 		{
-			if (class_exists('Spiral_Member_Login_Widget')) {
-				register_widget('Spiral_Member_Login_Widget');
+			if (class_exists('WPMLS_Spiral_Member_Login_Widget')) {
+				register_widget('WPMLS_Spiral_Member_Login_Widget');
 			}
 		}
 
@@ -495,29 +516,30 @@ if (!class_exists('Spiral_Member_Login')) :
 		}
 
 		private function clear_user_options()
-        {
-            global $wpdb;
+		{
+			global $wpdb;
 
-            $sml_sid =  $this->decrypt_key($this->session->get('sml_sid'), SECURE_AUTH_KEY);
-            $page_option_name                           = 'page_url_' . $sml_sid . '%';
-            $shortcode_mypage_url_optiona_name          = 'shortcode_mypage_url' . $sml_sid . '%';
-            $extraction_rule_option_name                = 'extraction_rule' . $sml_sid . '%';
-            $shortcode_is_logged_in_type_optiona_name   = 'shortcode_is_logged_in_type' . $sml_sid . '%';
-		
-			
+			$sml_sid =  $this->decrypt_key($this->session->get('sml_sid'), SECURE_AUTH_KEY);
+			$page_option_name                           = 'page_url_' . $sml_sid . '%';
+			$shortcode_mypage_url_optiona_name          = 'shortcode_mypage_url' . $sml_sid . '%';
+			$extraction_rule_option_name                = 'extraction_rule' . $sml_sid . '%';
+			$shortcode_is_logged_in_type_optiona_name   = 'shortcode_is_logged_in_type' . $sml_sid . '%';
 
 
-            $wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",  $shortcode_mypage_url_optiona_name));
-            $wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",  $shortcode_is_logged_in_type_optiona_name));
-            $wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",  $page_option_name));
-            $wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",  $extraction_rule_option_name));
-			
+
+
+			$wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",  $shortcode_mypage_url_optiona_name));
+			$wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",  $shortcode_is_logged_in_type_optiona_name));
+			$wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",  $page_option_name));
+			$wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",  $extraction_rule_option_name));
+
 			if (isset($_COOKIE["sml_wp_session"])) {
-                $sesssions = explode('||', $_COOKIE["sml_wp_session"]);
-                $session_id  = $sesssions[0];
-                delete_option('_wp_session_' . $session_id);
-            }
-        }		/**
+				$sesssions = explode('||', $_COOKIE["sml_wp_session"]);
+				$session_id  = $sesssions[0];
+				delete_option('_wp_session_' . $session_id);
+			}
+		}
+		/**
 		 * Proccesses the request
 		 *
 		 * Callback for "template_redirect" hook in template-loader.php
@@ -526,7 +548,7 @@ if (!class_exists('Spiral_Member_Login')) :
 		 */
 		public function template_redirect()
 		{
-			
+
 			$this->request_action = isset($_REQUEST['action']) ? sanitize_key($_REQUEST['action']) : '';
 
 			if (!$this->request_action && self::is_sml_page()) {
@@ -535,7 +557,7 @@ if (!class_exists('Spiral_Member_Login')) :
 			$this->request_template_num = isset($_REQUEST['template_num']) ? sanitize_key($_REQUEST['template_num']) : 0;
 
 			if ($this->is_settings_imcomplete()) {
-				
+
 				if ($this->request_action) {
 					wp_redirect(get_home_url('/'));
 					exit;
@@ -548,13 +570,13 @@ if (!class_exists('Spiral_Member_Login')) :
 			if (has_action('sml_request_' . $this->request_action)) {
 				do_action_ref_array('sml_request_' . $this->request_action, array(&$this));
 			} else {
-				
+
 				$is_post = ('POST' == $_SERVER['REQUEST_METHOD']);
 				switch ($this->request_action) {
 					case 'shortcode_mypage_url':
 						$token = $this->decrypt_key($this->session->get('sml_sid'), SECURE_AUTH_KEY);
 						if (isset($_GET['url'])) {
-							
+
 							$option_name = 'shortcode_mypage_url' . $token . '_' . $this->request_action . '_page_id_' . $_GET['url'];
 							if (get_option($option_name)) {
 								$shortcode_mypage_url = get_option($option_name);
@@ -591,8 +613,8 @@ if (!class_exists('Spiral_Member_Login')) :
 						}
 
 
-						if ($this->get_option('member_logout_url')) {
-							$logout_setting_url = $this->get_option('member_logout_url');
+						if ($this->get_option('wpmls_member_logout_url')) {
+							$logout_setting_url = $this->get_option('wpmls_member_logout_url');
 							wp_redirect($logout_setting_url);
 							exit;
 						}
@@ -601,10 +623,10 @@ if (!class_exists('Spiral_Member_Login')) :
 
 					case 'register':
 						if (isset($_GET['url'])) {
-							
+
 							$token = $this->decrypt_key($this->session->get('sml_sid'), SECURE_AUTH_KEY);
 							$option_name = 'shortcode_mypage_url' . $token . '_' . $this->request_action . '_page_id_' . $_GET['url'];
-							
+
 							if (get_option($option_name)) {
 								$shortcode_mypage_url = get_option($option_name);
 								if (isset($_GET['param'])) {
@@ -630,8 +652,8 @@ if (!class_exists('Spiral_Member_Login')) :
 								}
 							}
 						}
-						if ($register_url = $this->get_option('register_url')) {
-							wp_redirect($register_url);
+						if ($wpmls_register_url = $this->get_option('wpmls_register_url')) {
+							wp_redirect($wpmls_register_url);
 							exit;
 						} else {
 							wp_redirect(get_home_url('/'));
@@ -639,8 +661,8 @@ if (!class_exists('Spiral_Member_Login')) :
 						}
 						break;
 					case 'lostpassword':
-						if ($lostpassword_url = $this->get_option('lostpassword_url')) {
-							wp_redirect($lostpassword_url);
+						if ($wpmls_lostpassword_url = $this->get_option('wpmls_lostpassword_url')) {
+							wp_redirect($wpmls_lostpassword_url);
 							exit;
 						} else {
 							wp_redirect(get_home_url('/'));
@@ -673,15 +695,15 @@ if (!class_exists('Spiral_Member_Login')) :
 									} else {
 										$this->clear_user_options();
 										@setcookie('is_login', false, time() - 1800, COOKIEPATH, COOKIE_DOMAIN, TRUE, TRUE); // DELETE COOKIE
-										$logout_url = get_option($this->options_key)['member_logout_url'];
-										wp_redirect($logout_url);
+										$wpmls_logout_url = get_option($this->options_key)['wpmls_member_logout_url'];
+										wp_redirect($wpmls_logout_url);
 										exit;
 									}
 								}
 							}
 							wp_redirect(get_home_url('/'));
 							exit;
-						} else {					
+						} else {
 							if ($path) {
 								wp_redirect(self::get_page_link('login', 'expired=true'));
 							} else {
@@ -709,8 +731,8 @@ if (!class_exists('Spiral_Member_Login')) :
 									} else {
 										$this->clear_user_options();
 										@setcookie('is_login', false, time() - 1800, COOKIEPATH, COOKIE_DOMAIN, TRUE, TRUE); // DELETE COOKIE
-										$logout_url = get_option($this->options_key)['member_logout_url'];
-										wp_redirect($logout_url);
+										$wpmls_logout_url = get_option($this->options_key)['wpmls_member_logout_url'];
+										wp_redirect($wpmls_logout_url);
 										exit;
 									}
 								}
@@ -733,14 +755,14 @@ if (!class_exists('Spiral_Member_Login')) :
 							$sml_sid 	= $this->encrypt_key($_REQUEST['sml_sid'], SECURE_AUTH_KEY);
 							$login_id	= $this->encrypt_key($_REQUEST["login_id"], SECURE_AUTH_KEY);
 							$record_id	= $this->encrypt_key($_REQUEST["record_id"], SECURE_AUTH_KEY);
-							
-							update_option('clear_cached', "unclear");
+
+							update_option('wpmls_clear_cached', "unclear");
 
 							$this->session->regenerate_id(true);
 							$this->session->set('sml_sid', $sml_sid);
 							$this->session->set('login_id', $login_id);
 							$this->session->set('record_id', $record_id);
-							
+
 
 							if (!$this->is_logged_in($sml_sid)) {
 								$redirect_to 	= get_option('sml_current_page_url');
@@ -748,10 +770,10 @@ if (!class_exists('Spiral_Member_Login')) :
 								$param_exist =  (strpos($redirect_to, "?") !== false) ? "&" : "?";
 								switch ($error_code) {
 									case 401:
-										wp_redirect(parse_url($redirect_to)["path"] .$param_exist. 'message=unauthorized');
+										wp_redirect(parse_url($redirect_to)["path"] . $param_exist . 'message=unauthorized');
 										exit;
 									case 203:
-										wp_redirect(parse_url($redirect_to)["path"] .$param_exist. 'message=withdrawed');
+										wp_redirect(parse_url($redirect_to)["path"] . $param_exist . 'message=withdrawed');
 										exit;
 								}
 							}
@@ -767,38 +789,38 @@ if (!class_exists('Spiral_Member_Login')) :
 								$error_code		= (int)$_REQUEST['error_code'];
 								$param_exist =  (strpos($redirect_to, "?") !== false) ? "&" : "?";
 								$redirect_url = $this->clear_error_message($redirect_to);
-								
+
 								switch ($error_code) {
 									case 401:
-										wp_redirect($redirect_url .$param_exist. 'message=unauthorized');
+										wp_redirect($redirect_url . $param_exist . 'message=unauthorized');
 										exit;
 									case 203:
-										wp_redirect($redirect_url .$param_exist. 'message=withdrawed');
+										wp_redirect($redirect_url . $param_exist . 'message=withdrawed');
 										exit;
 								}
 							}
 
 							$redirect_to = isset($_REQUEST['redirect_to']) ? $_REQUEST['redirect_to'] : '';
-							$is_enable  = get_option($this->options_key)['related_web']['is_enable'];
-							$is_checked = $is_enable ? 'checked' : '';
-							$param_name = get_option($this->options_key)['related_web']['atts']['param_name'];
-							$field_name = get_option($this->options_key)['related_web']['atts']['field_name'];
+							$wpmls_is_enable  = get_option($this->options_key)['wpmls_related_web']['wpmls_is_enable'];
+							$is_checked = $wpmls_is_enable ? 'checked' : '';
+							$param_name = get_option($this->options_key)['wpmls_related_web']['atts']['param_name'];
+							$field_name = get_option($this->options_key)['wpmls_related_web']['atts']['field_name'];
 
 							$user_data = $this->get_user_prop_by_key($field_name);
 							$param = null;
-							if($is_enable == '1'){
-								$param = '?'.$param_name. '=' . $user_data;
+							if ($wpmls_is_enable == '1') {
+								$param = '?' . $param_name . '=' . $user_data;
 							}
 
 							if (empty($redirect_to) || strpos($redirect_to, '/') != 0) {
 								$redirect_to = get_home_url('/');
 							}
-							wp_redirect($this->clear_error_message($redirect_to).$param);
+							wp_redirect($this->clear_error_message($redirect_to) . $param);
 							exit;
 						}
 
 						if (isset($_REQUEST['error_code']) && isset($_REQUEST['message'])) {
-							
+
 							$redirect_to = isset($_REQUEST['redirect_to']) ? $_REQUEST['redirect_to'] : '';
 							$error_code		= (int)$_REQUEST['error_code'];
 							$param_exist =  (strpos($redirect_to, "?") !== false) ? "&" : "?";
@@ -806,10 +828,10 @@ if (!class_exists('Spiral_Member_Login')) :
 
 							switch ($error_code) {
 								case 401:
-									wp_redirect($redirect_url.$param_exist. 'message=unauthorized');
+									wp_redirect($redirect_url . $param_exist . 'message=unauthorized');
 									exit;
 								case 203:
-									wp_redirect($redirect_url .$param_exist. 'message=withdrawed');
+									wp_redirect($redirect_url . $param_exist . 'message=withdrawed');
 									exit;
 							}
 						}
@@ -848,7 +870,7 @@ if (!class_exists('Spiral_Member_Login')) :
 			$string = $queryString;
 			$substring = "message";
 
-			if(!is_null($queryString)){
+			if (!is_null($queryString)) {
 				if (strpos($string, $substring) !== false) {
 					// Remove the unwanted part of the query string
 					$newQueryString = substr($queryString, 0, strpos($queryString, '&message'));
@@ -859,10 +881,9 @@ if (!class_exists('Spiral_Member_Login')) :
 					return $newUrl;
 				}
 			}
-			
+
 			return $url;
-		
-        }
+		}
 
 		protected function login_validation()
 		{
@@ -905,8 +926,8 @@ if (!class_exists('Spiral_Member_Login')) :
 
 		function get_wp_current_url()
 		{
-			if (get_option("spiral_v2_member_login")["member_logout_url"]) {
-				$logout_redirect_url = get_option("spiral_v2_member_login")["member_logout_url"];
+			if (get_option("spiral_v2_member_login")["wpmls_member_logout_url"]) {
+				$logout_redirect_url = get_option("spiral_v2_member_login")["wpmls_member_logout_url"];
 				if (isset($logout_redirect_url) && $logout_redirect_url != null) {
 					return parse_url($logout_redirect_url);
 				}
@@ -1040,15 +1061,15 @@ if (!class_exists('Spiral_Member_Login')) :
 		 */
 		public function is_settings_imcomplete()
 		{
-			if (strlen($this->get_option('api_token')) != 52) {
-				$token =  $this->wpfws_dos_soar($this->get_option('api_token'), SECURE_AUTH_KEY);
-			} elseif (strlen($this->get_option('api_token')) == 52) {
-				$token = $this->get_option('api_token');
+			if (strlen($this->get_option('wpmls_api_token')) != 52) {
+				$token =  $this->wpfws_dos_soar($this->get_option('wpmls_api_token'), SECURE_AUTH_KEY);
+			} elseif (strlen($this->get_option('wpmls_api_token')) == 52) {
+				$token = $this->get_option('wpmls_api_token');
 			}
 
-			$auth_form_url = $this->get_option('auth_form_url');
+			$wpmls_auth_form_url = $this->get_option('wpmls_auth_form_url');
 
-			return (empty($token) || empty($auth_form_url));
+			return (empty($token) || empty($wpmls_auth_form_url));
 		}
 
 		/**
@@ -1069,7 +1090,7 @@ if (!class_exists('Spiral_Member_Login')) :
 		 * @access public
 		 *
 		 * @param string|array $atts Attributes passed from the shortcode
-		 * @return string HTML output from Spiral_Member_Login_Template->display()
+		 * @return string HTML output from WPMLS_Spiral_Member_Login_Template->display()
 		 */
 		public function shortcode_show_template($atts = '')
 		{
@@ -1097,7 +1118,6 @@ if (!class_exists('Spiral_Member_Login')) :
 					$atts['show_profile_link'] = false;
 					$atts['show_resetpass_link'] = false;
 					$atts['show_withdrawal_link'] = false;
-					
 				}
 				// Hide_register & lost_password_link & profile_link & resetpw_link & withdrawal_link
 				if (isset($atts['register']) && $atts['register'] == 'off') {
@@ -1133,22 +1153,22 @@ if (!class_exists('Spiral_Member_Login')) :
 					delete_option($logout_option_name);
 				}
 			}
-			if (!isset($atts['name_key']) && $this->get_option('default_name_key')) {
-				$atts['name_key'] = $this->get_option('default_name_key');
+			if (!isset($atts['name_key']) && $this->get_option('wpmls_default_name_key')) {
+				$atts['name_key'] = $this->get_option('wpmls_default_name_key');
 			}
-			if (!$this->get_option('register_url')) {
+			if (!$this->get_option('wpmls_register_url')) {
 				$atts['show_reg_link'] = false;
 			}
-			if (!$this->get_option('lostpassword_url')) {
+			if (!$this->get_option('wpmls_lostpassword_url')) {
 				$atts['show_pass_link'] = false;
 			}
-			if (!$this->get_option('profile_page_id')) {
+			if (!$this->get_option('wpmls_profile_page_id')) {
 				$atts['show_profile_link'] = false;
 			}
-			if (!$this->get_option('resetpass_page_id')) {
+			if (!$this->get_option('wpmls_resetpass_page_id')) {
 				$atts['show_resetpass_link'] = false;
 			}
-			if (!$this->get_option('withdrawal_page_id')) {
+			if (!$this->get_option('wpmls_withdrawal_page_id')) {
 				$atts['show_withdrawal_link'] = false;
 			}
 
@@ -1206,11 +1226,11 @@ if (!class_exists('Spiral_Member_Login')) :
 					foreach ($array_key_prop as $key => $value) {
 						$user_key = isset($value) ? $value : null;
 						$user_data =  $this->get_user_props($user_key);
-						
-						if(is_array($user_data)){
+
+						if (is_array($user_data)) {
 							$user_data = $user_data[$user_key];
 						}
-						
+
 						if (isset($user_data) || empty($user_data)) {
 							$param_link .=   $user_key . '=' . $user_data  . '&';
 							$param .=    $user_data  . ',';
@@ -1219,16 +1239,16 @@ if (!class_exists('Spiral_Member_Login')) :
 
 					$display_text_link = substr_replace($param_link, "", -1);
 					$display_text = substr_replace($param, "", -1);
-					
+
 
 					if (isset($atts['link'])) {
 						$is_query =  strpos($atts["link"], '?') !== false;
-						$link = ($is_query) ? $atts["link"] . '&' : $atts["link"]. '?';
-						
+						$link = ($is_query) ? $atts["link"] . '&' : $atts["link"] . '?';
+
 						if (isset($user_key)) {
 
 							$final_display = '<p><a href="' . $link . $display_text_link . '">' . $atts['link_text'] . '</a></p>';
-							return '<p><a href="' . $link . $display_text_link .'"' .$target. '>' . $atts['link_text'] . '</a></p>';
+							return '<p><a href="' . $link . $display_text_link . '"' . $target . '>' . $atts['link_text'] . '</a></p>';
 						}
 					} else {
 						return $display_text;
@@ -1240,12 +1260,12 @@ if (!class_exists('Spiral_Member_Login')) :
 
 				$param_link = is_array($user_data) ? $user_key . '=' . $user_data[$user_key] : $user_key . '=' . $user_data;;
 				$param      =    is_array($user_data) ? $user_data[$user_key] : $user_data;
-				
+
 				if (isset($atts['link'])) {
 					$is_query =  strpos($atts["link"], '?') !== false;
 					$link = ($is_query) ? $atts["link"] . '&' : $atts["link"] . '?';
 					if (isset($user_key)) {
-						return '<p><a href="' . $link . $param_link .'"' .$target. '>' . $atts['link_text'] . '</a></p>';
+						return '<p><a href="' . $link . $param_link . '"' . $target . '>' . $atts['link_text'] . '</a></p>';
 					}
 				} else {
 					return $param;
@@ -1308,11 +1328,11 @@ if (!class_exists('Spiral_Member_Login')) :
 			$action = 'register';
 
 			if (isset($atts['title'])) {
-				return '<div><a '. $target  .' href="' . $action . '?url=' . $page_url . $param . '">' . $atts['title'] . '</a></div>';
+				return '<div><a ' . $target  . ' href="' . $action . '?url=' . $page_url . $param . '">' . $atts['title'] . '</a></div>';
 			}
 
 			if (isset($atts['image'])) {
-				return '<div><a '. $target  .' href="' . $action . '?url=' . $page_url . $param . '">
+				return '<div><a ' . $target  . ' href="' . $action . '?url=' . $page_url . $param . '">
 				<img src="' . $atts['image'] . '">
 				</a></div>';
 			}
@@ -1322,7 +1342,7 @@ if (!class_exists('Spiral_Member_Login')) :
 		protected function get_user_prop_by_key($key)
 		{
 			$app_id 	=	$this->spiral2->app_id;
-			$db_title 	= 	$this->get_option('member_db_id');
+			$db_title 	= 	$this->get_option('wpmls_member_db_id');
 			$record_id 	=	$this->decrypt_key($this->session->get('record_id'), SECURE_AUTH_KEY);
 
 
@@ -1334,8 +1354,8 @@ if (!class_exists('Spiral_Member_Login')) :
 			if (is_null($user_record) || !isset($key) || is_null($user_record['item'])) {
 				return null;
 			}
-			
-			
+
+
 
 			$user_prop_value = array_key_exists(strval($key), $user_record['item']) ? (($user_record['item'][$key])) : null;
 
@@ -1350,12 +1370,12 @@ if (!class_exists('Spiral_Member_Login')) :
 			}
 			return $user_prop_value;
 		}
-		
+
 		protected function get_user_prop_by_value($key)
 		{
 
 			$app_id 	=	$this->spiral2->app_id;
-			$db_title 	= 	$this->get_option('member_db_id');
+			$db_title 	= 	$this->get_option('wpmls_member_db_id');
 			$record_id 	=	$this->decrypt_key($this->session->get('record_id'), SECURE_AUTH_KEY);
 
 
@@ -1363,17 +1383,17 @@ if (!class_exists('Spiral_Member_Login')) :
 				return null;
 
 			$user_record = $this->spiral2->get_user($app_id, $db_title, $record_id);
-		
+
 			if (is_null($user_record) || !isset($key) || is_null($user_record['item'])) {
 				return null;
 			}
-			
-			if(is_null($user_record['options'][$key])){
+
+			if (is_null($user_record['options'][$key])) {
 				return null;
 			}
 
 			$user_prop_value = array_key_exists($key, $user_record['item']) ? (($user_record['item'][$key])) : null;
-			
+
 			if ($key == 'name') {
 				if (isset($user_record['item']['firstName']) && isset($user_record['item']['lastName'])) {
 					return $user_record['item']['lastName'] . ' ' . $user_record['item']['firstName'];
@@ -1419,57 +1439,57 @@ if (!class_exists('Spiral_Member_Login')) :
 		public function shortcode_is_logged_in_type($atts, $content = null)
 		{
 
-			
+
 			if (!$this->is_logged_in() || !isset($atts['value']) || !isset($atts['key'])) {
 				return null;
 			}
-			
-			
+
+
 			$sml_sid = $this->session->get('sml_sid');
 			$operator    	= isset($atts['filter']) ? $atts['filter'] : '';
-			$option_name 	= 'shortcode_is_logged_in_type' . $this->decrypt_key($sml_sid, SECURE_AUTH_KEY) . '_' . $this->encrypt($atts['key']) . '_'.$this->encrypt($atts['value']).$operator;
+			$option_name 	= 'shortcode_is_logged_in_type' . $this->decrypt_key($sml_sid, SECURE_AUTH_KEY) . '_' . $this->encrypt($atts['key']) . '_' . $this->encrypt($atts['value']) . $operator;
 			$att_value 			= $atts['value'] == 'null' ? '' : $atts['value'];
 			$att_key 			= $atts['key'] == 'null' ? '' : $atts['key'];
-			
+
 			$app_id 		=	$this->spiral2->app_id;
-			$db_title 		= 	$this->get_option('member_db_id');
-			$is_selectable 	= 	$this->spiral2->check_selectable_field($app_id,$db_title,$att_key);
-			
-			if(!$is_selectable)
+			$db_title 		= 	$this->get_option('wpmls_member_db_id');
+			$is_selectable 	= 	$this->spiral2->check_selectable_field($app_id, $db_title, $att_key);
+
+			if (!$is_selectable)
 				return null;
 			$user_prop_value 	= $this->get_user_prop_by_key($atts['key']);
-			
-			
+
+
 			// Catch Not existed
-			if(!get_option($option_name)){
+			if (!get_option($option_name)) {
 				$user_prop_value 	= $this->get_user_prop_by_key($atts['key']);
-				if(!is_null($user_prop_value))
-					add_option($option_name,$user_prop_value);
-			}else{
+				if (!is_null($user_prop_value))
+					add_option($option_name, $user_prop_value);
+			} else {
 				$user_prop_value = get_option($option_name);
 			}
-			
-			if(is_null($user_prop_value))
+
+			if (is_null($user_prop_value))
 				return null;
 
 			switch ($this->isOperator($atts)) {
 				case 'equal':
-					
+
 					$arr_value = $this->to_arrray($att_value);
 					$user_prop_value_arr = is_array($user_prop_value) ? $user_prop_value : $this->to_arrray($user_prop_value);
 
-					if( count($arr_value) > 1) {
+					if (count($arr_value) > 1) {
 						$is_equal = 0;
 						$x = count($arr_value);
-						for($i=0; $i< $x; $i++){
+						for ($i = 0; $i < $x; $i++) {
 							if (in_array($arr_value[$i], $user_prop_value_arr)) {
 								$is_equal++;
 							}
 						}
-						if($is_equal > 0){
+						if ($is_equal > 0) {
 							return do_shortcode($content);
 						}
-					}else{
+					} else {
 						$user_prop_value_arr = is_array($user_prop_value) ? $user_prop_value : $this->to_arrray($user_prop_value);
 						if (in_array($att_value, $user_prop_value_arr)) {
 							return do_shortcode($content);
@@ -1478,11 +1498,10 @@ if (!class_exists('Spiral_Member_Login')) :
 					break;
 				case 'unequal':
 					$arr_value = $this->to_arrray($att_value);
-					
-					if(is_null($arr_value) && !is_null($user_prop_value)){
+
+					if (is_null($arr_value) && !is_null($user_prop_value)) {
 						return do_shortcode($content);
-					}
-					else if (!in_array($user_prop_value, $arr_value)) {
+					} else if (!in_array($user_prop_value, $arr_value)) {
 						return do_shortcode($content);
 					}
 					break;
@@ -1555,29 +1574,29 @@ if (!class_exists('Spiral_Member_Login')) :
 		{
 			$domin_name = parse_url(get_site_url())["scheme"] . '://' . parse_url(get_site_url())["host"] . '/';
 			return apply_filters('sml_default_options', array(
-				'api_token' 				=> '',
-				'api_token_secret' 			=> '',
-				'auth_form_url'				=> '',
-				'authentication_id'			=> '',
-				'member_db_id' 				=> '',
-				'member_app_id' 			=> '',
-				'site_id' 					=> '',
-				'authentication_id' 		=> '',
-				'default_name_key' 			=> 'name',
-				'login_id_label_jp'	 		=> '',
-				'login_id_label_en' 		=> '',
-				'register_url' 				=> '',
-				'lostpassword_url' 			=> '',
-				'member_domain_name' 		=> $domin_name,
-				'member_logout_url' 		=> get_home_url(),
-				'profile_page_id' 			=> '',
-				'resetpass_page_id' 		=> '',
-				'withdrawal_page_id' 		=> '',
-				'related_web' => [
-					'is_enable' => false,
+				'wpmls_api_token' => '',
+				'wpmls_api_token_secret' => '',
+				'wpmls_auth_form_url' => '',
+				'wpmls_authentication_id' => '',
+				'wpmls_member_db_id' => '',
+				'wpmls_member_app_id' => '',
+				'wpmls_site_id' => '',
+				'wpmls_authentication_id' => '',
+				'wpmls_default_name_key' => 'name',
+				'wpmls_login_id_label_jp' => '',
+				'wpmls_login_id_label_en' => '',
+				'wpmls_register_url' => '',
+				'wpmls_lostpassword_url' => '',
+				'wpmls_member_domain_name' => $domin_name,
+				'wpmls_member_logout_url' => get_home_url(),
+				'wpmls_profile_page_id' => '',
+				'wpmls_resetpass_page_id' => '',
+				'wpmls_withdrawal_page_id' => '',
+				'wpmls_related_web' => [
+					'wpmls_is_enable' => false,
 					'atts' => [
 						'param_name' => '',
-						'field_name' => ''	
+						'field_name' => ''
 					]
 				]
 			));
@@ -1659,7 +1678,7 @@ if (!class_exists('Spiral_Member_Login')) :
 
 			$args['template_num'] = count($this->loaded_templates);
 
-			$template = new Spiral_Member_Login_Template($args);
+			$template = new WPMLS_Spiral_Member_Login_Template($args);
 
 			if ($args['template_num'] == $this->request_template_num) {
 				$template->set_active();
@@ -1698,98 +1717,98 @@ if (!class_exists('Spiral_Member_Login')) :
 			if (isset($_REQUEST['is_save'])) {
 				$error_messages = [];
 				$options = $this->get_options();
-				$options['api_token'] = sanitize_text_field(trim($this->wpfws_jak_soar($_POST[$this->options_key]['api_token'], SECURE_AUTH_KEY)));
+				$options['wpmls_api_token'] = sanitize_text_field(trim($this->wpfws_jak_soar($_POST[$this->options_key]['wpmls_api_token'], SECURE_AUTH_KEY)));
 				$token_pattern = '/^[0-9a-zA-Z_\-]+$/';
-				$options['member_db_id'] = sanitize_text_field(trim($_POST[$this->options_key]['member_db_id']));
-				$options['member_app_id'] = sanitize_text_field(trim($_POST[$this->options_key]['member_app_id']));
-				$options['site_id'] = sanitize_text_field(trim($_POST[$this->options_key]['site_id']));
-				$options['auth_form_url'] = sanitize_text_field(trim($_POST[$this->options_key]['auth_form_url']));
-				$options['member_logout_url'] = sanitize_text_field(trim($_POST[$this->options_key]['member_logout_url']));
-				$options['authentication_id'] = sanitize_text_field(trim($_POST[$this->options_key]['authentication_id']));
-				$options['default_name_key'] = sanitize_text_field(trim($_POST[$this->options_key]['default_name_key']));
-				$options['login_id_label_jp'] = sanitize_text_field(trim($_POST[$this->options_key]['login_id_label_jp']));
-				$options['login_id_label_en'] = sanitize_text_field(trim($_POST[$this->options_key]['login_id_label_en']));
-				$options['register_url'] = sanitize_text_field(trim($_POST[$this->options_key]['register_url']));
-				$options['lostpassword_url'] = sanitize_text_field(trim($_POST[$this->options_key]['lostpassword_url']));
-				$options['profile_page_id'] = ($_POST[$this->options_key]['profile_page_id'] != '') ? (trim($_POST[$this->options_key]['profile_page_id'])) : '';
-				$options['resetpass_page_id'] = ($_POST[$this->options_key]['resetpass_page_id'] != '') ? (trim($_POST[$this->options_key]['resetpass_page_id'])) : '';
-				$options['withdrawal_page_id'] = ($_POST[$this->options_key]['withdrawal_page_id'] != '') ? (trim($_POST[$this->options_key]['withdrawal_page_id'])) : '';
+				$options['wpmls_member_db_id'] = sanitize_text_field(trim($_POST[$this->options_key]['wpmls_member_db_id']));
+				$options['wpmls_member_app_id'] = sanitize_text_field(trim($_POST[$this->options_key]['wpmls_member_app_id']));
+				$options['wpmls_site_id'] = sanitize_text_field(trim($_POST[$this->options_key]['wpmls_site_id']));
+				$options['wpmls_auth_form_url'] = sanitize_text_field(trim($_POST[$this->options_key]['wpmls_auth_form_url']));
+				$options['wpmls_member_logout_url'] = sanitize_text_field(trim($_POST[$this->options_key]['wpmls_member_logout_url']));
+				$options['wpmls_authentication_id'] = sanitize_text_field(trim($_POST[$this->options_key]['wpmls_authentication_id']));
+				$options['wpmls_default_name_key'] = sanitize_text_field(trim($_POST[$this->options_key]['wpmls_default_name_key']));
+				$options['wpmls_login_id_label_jp'] = sanitize_text_field(trim($_POST[$this->options_key]['wpmls_login_id_label_jp']));
+				$options['wpmls_login_id_label_en'] = sanitize_text_field(trim($_POST[$this->options_key]['wpmls_login_id_label_en']));
+				$options['wpmls_register_url'] = sanitize_text_field(trim($_POST[$this->options_key]['wpmls_register_url']));
+				$options['wpmls_lostpassword_url'] = sanitize_text_field(trim($_POST[$this->options_key]['wpmls_lostpassword_url']));
+				$options['wpmls_profile_page_id'] = ($_POST[$this->options_key]['wpmls_profile_page_id'] != '') ? (trim($_POST[$this->options_key]['wpmls_profile_page_id'])) : '';
+				$options['wpmls_resetpass_page_id'] = ($_POST[$this->options_key]['wpmls_resetpass_page_id'] != '') ? (trim($_POST[$this->options_key]['wpmls_resetpass_page_id'])) : '';
+				$options['wpmls_withdrawal_page_id'] = ($_POST[$this->options_key]['wpmls_withdrawal_page_id'] != '') ? (trim($_POST[$this->options_key]['wpmls_withdrawal_page_id'])) : '';
 
-					if(!isset($options['related_web']) ){
-					$options['related_web'] = [
-						'is_enable' => false,
+				if (!isset($options['wpmls_related_web'])) {
+					$options['wpmls_related_web'] = [
+						'wpmls_is_enable' => false,
 						'atts' => [
 							'param_name' => '',
-							'field_name' => ''	
+							'field_name' => ''
 						]
 					];
 				}
-			
-				$options['related_web'] = [
-						'is_enable' => $_POST['is_enable'] == NULL ? false : $_POST['is_enable'],
-						'atts' => [
-							'param_name' => isset($_POST['param_name']) ? $_POST['param_name'] : null,
-							'field_name' => isset($_POST['field_name']) ? $_POST['field_name'] : null
-						]
+
+				$options['wpmls_related_web'] = [
+					'wpmls_is_enable' => $_POST['wpmls_is_enable'] == NULL ? false : $_POST['wpmls_is_enable'],
+					'atts' => [
+						'param_name' => isset($_POST['param_name']) ? $_POST['param_name'] : null,
+						'field_name' => isset($_POST['field_name']) ? $_POST['field_name'] : null
+					]
 				];
-				
+
 				if ($_POST['tab']  == '2') {
-					if (!$options['member_db_id']) {
-						unset($options['member_db_id']);
+					if (!$options['wpmls_member_db_id']) {
+						unset($options['wpmls_member_db_id']);
 						$error_messages[] = __('Enter member DB ID', self::domain);
 					}
-					if (!$options['member_app_id']) {
-						unset($options['member_app_id']);
+					if (!$options['wpmls_member_app_id']) {
+						unset($options['wpmls_member_app_id']);
 						$error_messages[] = __('Enter member member App ID', self::domain);
 					}
-					if (!$options['site_id']) {
-						unset($options['site_id']);
+					if (!$options['wpmls_site_id']) {
+						unset($options['wpmls_site_id']);
 						$error_messages[] = __('Enter site ID', self::domain);
 					}
 
-					if (!$options['authentication_id']) {
-						unset($options['authentication_id']);
+					if (!$options['wpmls_authentication_id']) {
+						unset($options['wpmls_authentication_id']);
 						$error_messages[] = __('Enter authentication area', self::domain);
 					}
 				} else {
-					if (!$options['auth_form_url']) {
-						unset($options['auth_form_url']);
+					if (!$options['wpmls_auth_form_url']) {
+						unset($options['wpmls_auth_form_url']);
 						$error_messages[] = __('Enter authentication form url', self::domain);
 					}
-					if (!preg_match($token_pattern, trim($this->wpfws_dos_soar($options['api_token'], SECURE_AUTH_KEY)))) {
-						unset($options['api_token']);
+					if (!preg_match($token_pattern, trim($this->wpfws_dos_soar($options['wpmls_api_token'], SECURE_AUTH_KEY)))) {
+						unset($options['wpmls_api_token']);
 						$error_messages[] = __('Enter a valid API token', self::domain);
 					}
-					if (!$options['default_name_key']) {
-						unset($options['default_name_key']);
+					if (!$options['wpmls_default_name_key']) {
+						unset($options['wpmls_default_name_key']);
 						$error_messages[] = __('Enter default name key', self::domain);
 					}
-					if (!$options['login_id_label_jp']) {
-						unset($options['login_id_label']);
+					if (!$options['wpmls_login_id_label_jp']) {
+						unset($options['wpmls_login_id_label']);
 						$error_messages[] = __('ログインIDラベルを入力してください', self::domain);
 					}
-					if (!$options['login_id_label_en']) {
-						unset($options['login_id_label']);
+					if (!$options['wpmls_login_id_label_en']) {
+						unset($options['wpmls_login_id_label']);
 						$error_messages[] = __('Enter Login ID Label', self::domain);
 					}
 
-					if (!$options['register_url']) {
-						unset($options['register_url']);
+					if (!$options['wpmls_register_url']) {
+						unset($options['wpmls_register_url']);
 						$error_messages[] = __('Enter register URL', self::domain);
 					}
 
-					if (!$options['lostpassword_url']) {
-						unset($options['lostpassword_url']);
+					if (!$options['wpmls_lostpassword_url']) {
+						unset($options['wpmls_lostpassword_url']);
 						$error_messages[] = __('Enter Lost password URL', self::domain);
 					}
 
-					if (!$options['resetpass_page_id']) {
-						unset($options['resetpass_page_id']);
+					if (!$options['wpmls_resetpass_page_id']) {
+						unset($options['wpmls_resetpass_page_id']);
 						$error_messages[] = __('Enter Lost Rset Password Page URL', self::domain);
 					}
 
-					if (!$options['withdrawal_page_id']) {
-						unset($options['withdrawal_page_id']);
+					if (!$options['wpmls_withdrawal_page_id']) {
+						unset($options['wpmls_withdrawal_page_id']);
 						$error_messages[] = __('Enter Lost withdrawal page URL', self::domain);
 					}
 				}
@@ -1986,16 +2005,16 @@ if (!class_exists('Spiral_Member_Login')) :
 		 */
 		public function settings_field_api_token()
 		{
-			$lek_somngat = $this->get_option('api_token');
+			$lek_somngat = $this->get_option('wpmls_api_token');
 			$after_encript = $lek_somngat;
-?>
-			<input name="<?php echo $this->options_key ?>[api_token]" type="password" id="spiral_member_login_api_token" class="sml_token_field" value="<?php echo $after_encript; ?>" required />
+		?>
+			<input name="<?php echo $this->options_key ?>[wpmls_api_token]" type="password" id="spiral_member_login_api_token" class="sml_token_field" value="<?php echo $after_encript; ?>" required />
 		<?php
 		}
 		public function settings_field_member_db_id()
 		{
 		?>
-			<input name="<?php echo $this->options_key ?>[member_db_id]" type="text" class="sml_member_app_id_field advance-config" value="<?php esc_attr_e($this->get_option('member_db_id'));  ?>" required />
+			<input name="<?php echo $this->options_key ?>[wpmls_member_db_id]" type="text" class="sml_member_app_id_field advance-config" value="<?php esc_attr_e($this->get_option('wpmls_member_db_id'));  ?>" required />
 		<?php
 		}
 
@@ -2039,7 +2058,8 @@ if (!class_exists('Spiral_Member_Login')) :
 			}
 		}
 
-		private function encrypt_key($plaintext, $key, $cipher = "aes-256-gcm") {
+		private function encrypt_key($plaintext, $key, $cipher = "aes-256-gcm")
+		{
 			if (!in_array($cipher, openssl_get_cipher_methods())) {
 				return false;
 			}
@@ -2049,7 +2069,7 @@ if (!class_exists('Spiral_Member_Login')) :
 				gzcompress($plaintext),
 				$cipher,
 				base64_decode($key),
-				$options=0,
+				$options = 0,
 				$iv,
 				$tag,
 			);
@@ -2063,7 +2083,8 @@ if (!class_exists('Spiral_Member_Login')) :
 			);
 		}
 
-		private function decrypt_key($cipherjson, $key) {
+		private function decrypt_key($cipherjson, $key)
+		{
 			try {
 				$json = json_decode($cipherjson, true, 2,  JSON_THROW_ON_ERROR);
 			} catch (Exception $e) {
@@ -2074,22 +2095,22 @@ if (!class_exists('Spiral_Member_Login')) :
 					base64_decode($json['ciphertext']),
 					$json['cipher'],
 					base64_decode($key),
-					$options=0,
+					$options = 0,
 					base64_decode($json['iv']),
 					base64_decode($json['tag'])
 				)
 			);
 		}
-		
+
 		public function settings_field_login_id_label()
 		{
 		?>
 			<div>
 				<label for="">日本語</label>
-				<input name="<?php echo $this->options_key ?>[login_id_label_jp]" type="text" class="sml_login_id_label_jp basic_config" value="<?php echo (empty(get_option('spiral_v2_member_login')["login_id_label_jp"])) ? "ユーザー名" :  get_option('spiral_v2_member_login')["login_id_label_jp"] ?>" required />
+				<input name="<?php echo $this->options_key ?>[wpmls_login_id_label_jp]" type="text" class="sml_login_id_label_jp basic_config" value="<?php echo (empty(get_option('spiral_v2_member_login')["wpmls_login_id_label_jp"])) ? "ユーザー名" :  get_option('spiral_v2_member_login')["wpmls_login_id_label_jp"] ?>" required />
 				<br><br>
 				<label for="">English</label>
-				<input name="<?php echo $this->options_key ?>[login_id_label_en]" type="text" class="sml_login_id_label_en basic_config" value="<?php echo (empty(get_option('spiral_v2_member_login')["login_id_label_en"])) ? "User Name" :  get_option('spiral_v2_member_login')["login_id_label_en"] ?>" required />
+				<input name="<?php echo $this->options_key ?>[wpmls_login_id_label_en]" type="text" class="sml_login_id_label_en basic_config" value="<?php echo (empty(get_option('spiral_v2_member_login')["wpmls_login_id_label_en"])) ? "User Name" :  get_option('spiral_v2_member_login')["wpmls_login_id_label_en"] ?>" required />
 			</div>
 		<?php
 
@@ -2098,32 +2119,33 @@ if (!class_exists('Spiral_Member_Login')) :
 		public function settings_field_register_url()
 		{
 		?>
-			<input name="<?php echo $this->options_key ?>[register_url]" type="text" class="sml_token_field" value="<?php esc_attr_e($this->get_option('register_url')); ?>" required />
+			<input name="<?php echo $this->options_key ?>[wpmls_register_url]" type="text" class="sml_token_field" value="<?php esc_attr_e($this->get_option('wpmls_register_url')); ?>" required />
 		<?php
 		}
 
 		public function settings_field_member_db_title()
 		{
 		?>
-			<input name="<?php echo $this->options_key ?>[member_db_title]" type="text" class="sml_member_app_id_field advance-config" value="<?php esc_attr_e($this->get_option('member_db_title')); ?>" />
+			<input name="<?php echo $this->options_key ?>[wpmls_member_db_title]" type="text" class="sml_member_app_id_field advance-config" value="<?php esc_attr_e($this->get_option('wpmls_member_db_title')); ?>" />
 		<?php
 		}
 
 		public function settings_field_logout_url()
 		{
 		?>
-			<input pattern="https?://.+" name="<?php echo $this->options_key ?>[member_logout_url]" type="text" class="sml_token_field" value="<?php esc_attr_e($this->get_option('member_logout_url')); ?>" />
+			<input pattern="https?://.+" name="<?php echo $this->options_key ?>[wpmls_member_logout_url]" type="text" class="sml_token_field" value="<?php esc_attr_e($this->get_option('wpmls_member_logout_url')); ?>" />
 		<?php
 		}
-		public function settings_field_related_web(){
+		public function settings_field_related_web()
+		{
 
-			$is_enable  = isset(get_option($this->options_key)['related_web']) ? get_option($this->options_key)['related_web']['is_enable'] : false;
-			$is_checked = $is_enable ? 'checked' : '';
-			$param_name = isset(get_option($this->options_key)['related_web']) ? get_option($this->options_key)['related_web']['atts']['param_name'] : '';
-			$field_name = isset(get_option($this->options_key)['related_web']) ? get_option($this->options_key)['related_web']['atts']['field_name'] : '';
+			$wpmls_is_enable  = isset(get_option($this->options_key)['wpmls_related_web']) ? get_option($this->options_key)['wpmls_related_web']['wpmls_is_enable'] : false;
+			$is_checked = $wpmls_is_enable ? 'checked' : '';
+			$param_name = isset(get_option($this->options_key)['wpmls_related_web']) ? get_option($this->options_key)['wpmls_related_web']['atts']['param_name'] : '';
+			$field_name = isset(get_option($this->options_key)['wpmls_related_web']) ? get_option($this->options_key)['wpmls_related_web']['atts']['field_name'] : '';
 		?>
 			<div>
-				<input id="is_enable" type="checkbox" pattern="https?://.+" name="is_enable" type="text" class="sml_url_field sml_member_logout_url_field advance-config" value="" <?php  echo $is_checked; ?>/>
+				<input id="wpmls_is_enable" type="checkbox" pattern="https?://.+" name="wpmls_is_enable" type="text" class="sml_url_field sml_member_logout_url_field advance-config" value="" <?php echo $is_checked; ?> />
 				<div class="" id="web_id">
 					<label for="">パラメータ名</label>
 					<input name="param_name" type="text" class="sml_login_id_label_jp basic_config" value="<?php echo $param_name; ?>" required />
@@ -2133,39 +2155,39 @@ if (!class_exists('Spiral_Member_Login')) :
 				</div>
 			</div>
 			<script>
-				const checkbox = document.querySelector("#is_enable");
+				const checkbox = document.querySelector("#wpmls_is_enable");
 				const div = document.querySelector("#web_id");
 
 				checkbox.addEventListener("click", function() {
-				  if (checkbox.checked) {
-					  	checkbox.value = 1;
-				  } else {
-					 checkbox.value = 0;
-				  }
+					if (checkbox.checked) {
+						checkbox.value = 1;
+					} else {
+						checkbox.value = 0;
+					}
 				});
 			</script>
-			
+
 		<?php
 		}
 
 		public function settings_field_withdrawal_page_id()
 		{
 		?>
-			<input name="<?php echo $this->options_key ?>[withdrawal_page_id]" type="text" class="sml_token_field" value="<?php esc_attr_e($this->get_option('withdrawal_page_id')); ?>" required />
+			<input name="<?php echo $this->options_key ?>[wpmls_withdrawal_page_id]" type="text" class="sml_token_field" value="<?php esc_attr_e($this->get_option('wpmls_withdrawal_page_id')); ?>" required />
 		<?php
 		}
 
 		public function settings_field_area_title()
 		{
 		?>
-			<input name="<?php echo $this->options_key ?>[area_title]" type="text" class="sml_area_title_field advance-config" value="<?php esc_attr_e($this->get_option('area_title')); ?>" required />
+			<input name="<?php echo $this->options_key ?>[wpmls_area_title]" type="text" class="sml_area_title_field advance-config" value="<?php esc_attr_e($this->get_option('wpmls_area_title')); ?>" required />
 		<?php
 		}
 
 		public function settings_field_default_name_key()
 		{
 		?>
-			<input name="<?php echo $this->options_key ?>[default_name_key]" type="text" class="sml_title_field basic_config" value="<?php esc_attr_e($this->get_option('default_name_key')); ?>" required />
+			<input name="<?php echo $this->options_key ?>[wpmls_default_name_key]" type="text" class="sml_title_field basic_config" value="<?php esc_attr_e($this->get_option('wpmls_default_name_key')); ?>" required />
 		<?php
 		}
 
@@ -2173,46 +2195,46 @@ if (!class_exists('Spiral_Member_Login')) :
 		public function settings_field_profile_page_id()
 		{
 		?>
-			<input name="<?php echo $this->options_key ?>[profile_page_id]" type="text" class="sml_token_field" value="<?php esc_attr_e($this->get_option('profile_page_id')); ?>" required />
+			<input name="<?php echo $this->options_key ?>[wpmls_profile_page_id]" type="text" class="sml_token_field" value="<?php esc_attr_e($this->get_option('wpmls_profile_page_id')); ?>" required />
 		<?php
 		}
 
 		public function settings_field_lostpassword_url()
 		{
 		?>
-			<input name="<?php echo $this->options_key ?>[lostpassword_url]" type="text" class="sml_token_field" value="<?php esc_attr_e($this->get_option('lostpassword_url')); ?>" required />
+			<input name="<?php echo $this->options_key ?>[wpmls_lostpassword_url]" type="text" class="sml_token_field" value="<?php esc_attr_e($this->get_option('wpmls_lostpassword_url')); ?>" required />
 		<?php
 		}
 
 		public function settings_field_resetpass_page_id()
 		{
 		?>
-			<input name="<?php echo $this->options_key ?>[resetpass_page_id]" type="text" class="sml_token_field" value="<?php esc_attr_e($this->get_option('resetpass_page_id')); ?>" required />
+			<input name="<?php echo $this->options_key ?>[wpmls_resetpass_page_id]" type="text" class="sml_token_field" value="<?php esc_attr_e($this->get_option('wpmls_resetpass_page_id')); ?>" required />
 		<?php
 		}
 
 		public function settings_field_auth_form_url()
 		{
 		?>
-			<input name="<?php echo $this->options_key ?>[auth_form_url]" type="text" class="sml_token_field" value="<?php esc_attr_e($this->get_option('auth_form_url')); ?>" required />
+			<input name="<?php echo $this->options_key ?>[wpmls_auth_form_url]" type="text" class="sml_token_field" value="<?php esc_attr_e($this->get_option('wpmls_auth_form_url')); ?>" required />
 		<?php
 		}
 		public function settings_field_authentication_id()
 		{
 		?>
-			<input name="<?php echo $this->options_key ?>[authentication_id]" type="text" class="sml_site_id_field advance-config" value="<?php esc_attr_e($this->get_option('authentication_id')); ?>" required />
+			<input name="<?php echo $this->options_key ?>[wpmls_authentication_id]" type="text" class="sml_site_id_field advance-config" value="<?php esc_attr_e($this->get_option('wpmls_authentication_id')); ?>" required />
 		<?php
 		}
 		public function settings_field_site_id()
 		{
 		?>
-			<input name="<?php echo $this->options_key ?>[site_id]" type="text" class="sml_site_id_field advance-config" value="<?php esc_attr_e($this->get_option('site_id')); ?>" required />
+			<input name="<?php echo $this->options_key ?>[wpmls_site_id]" type="text" class="sml_site_id_field advance-config" value="<?php esc_attr_e($this->get_option('wpmls_site_id')); ?>" required />
 		<?php
 		}
 		public function settings_field_identification_key()
 		{
 		?>
-			<input name="<?php echo $this->options_key ?>[member_app_id]" type="text" class="sml_member_app_id_field advance-config" value="<?php esc_attr_e($this->get_option('member_app_id')); ?>" required />
+			<input name="<?php echo $this->options_key ?>[wpmls_member_app_id]" type="text" class="sml_member_app_id_field advance-config" value="<?php esc_attr_e($this->get_option('wpmls_member_app_id')); ?>" required />
 <?php
 		}
 
@@ -2249,7 +2271,7 @@ if (!class_exists('Spiral_Member_Login')) :
 
 		public function is_logged_in($token = null)
 		{
-			if (get_option('clear_cached') == "cleared") {
+			if (get_option('wpmls_clear_cached') == "cleared") {
 				if ($token) {
 					$this->clear_user_options();
 					$result = $this->spiral2->logout($token);
@@ -2269,10 +2291,10 @@ if (!class_exists('Spiral_Member_Login')) :
 			}
 
 			$token 				= $this->decrypt_key($this->session->get('sml_sid'), SECURE_AUTH_KEY);
-			$site_id 			= $this->spiral2->site_id;
-			$authentication_id 	= $this->spiral2->authentication_id;
+			$wpmls_site_id 			= $this->spiral2->wpmls_site_id;
+			$wpmls_authentication_id 	= $this->spiral2->wpmls_authentication_id;
 
-			$result = $this->spiral2->get_area_status($site_id, $authentication_id, $token);
+			$result = $this->spiral2->get_area_status($wpmls_site_id, $wpmls_authentication_id, $token);
 
 			// when user is not exist in DB clear 
 			if (!$result) {
@@ -2291,7 +2313,7 @@ if (!class_exists('Spiral_Member_Login')) :
 			}
 
 			$app_id 		=	$this->spiral2->app_id;
-			$db_title 		= 	$this->get_option('member_db_id');
+			$db_title 		= 	$this->get_option('wpmls_member_db_id');
 			$record_id 		=	$this->decrypt_key($this->session->get('record_id'), SECURE_AUTH_KEY);
 
 			$result = $this->spiral2->get_user($app_id, $db_title, $record_id);
@@ -2335,7 +2357,7 @@ if (!class_exists('Spiral_Member_Login')) :
 
 		public function get_user_props($key_prop = null)
 		{
-			
+
 			if (!isset($_COOKIE['is_login'])) {
 				return [
 					$key_prop => null
@@ -2343,17 +2365,17 @@ if (!class_exists('Spiral_Member_Login')) :
 			}
 
 			$app_id 		=	$this->spiral2->app_id;
-			$db_title 		= 	$this->get_option('member_db_id');
+			$db_title 		= 	$this->get_option('wpmls_member_db_id');
 			$record_id 		=	$this->decrypt_key($this->session->get('record_id'), SECURE_AUTH_KEY);
 
 			$data 			= $this->spiral2->get_user($app_id, $db_title, $record_id);
 			$result 		= $data['item'];
 			$option_value   = $data['options'];
 			$options 		= 	isset($option_value) ? $option_value : null;
-			
-			if(!isset($result)){
+
+			if (!isset($result)) {
 				$value = null;
-			}else{
+			} else {
 				$value      	=   array_key_exists($key_prop, $result) ? $result : null;
 			}
 
@@ -2400,7 +2422,7 @@ if (!class_exists('Spiral_Member_Login')) :
 					}
 				}
 			}
-			
+
 			return is_null($value) ? null : $value;
 		}
 

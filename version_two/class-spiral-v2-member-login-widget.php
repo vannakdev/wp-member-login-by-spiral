@@ -6,13 +6,13 @@
  * @author    PIPED BITS Co.,Ltd.
  */
 
-if ( ! class_exists( 'Spiral_Member_Login_Widget' ) ) :
+if ( ! class_exists( 'WPMLS_Spiral_Member_Login_Widget' ) ) :
 /*
  * Spiral Member Login widget class
  *
  * @since 1.0.0
  */
-class Spiral_Member_Login_Widget extends WP_Widget {
+class WPMLS_Spiral_Member_Login_Widget extends WP_Widget {
 	/**
 	 * Constructor
 	 *
@@ -25,7 +25,7 @@ class Spiral_Member_Login_Widget extends WP_Widget {
 			'description' => __( 'SPIRAL Login widget for your site', Spiral_Member_Login::domain )
 		);
 		parent::__construct( 'spiral_member_login', __( 'WP Member Login by SPIRAL', Spiral_Member_Login::domain ), $widget_options );
-		$this->translator 			= 	new Translator();
+		$this->translator 			= 	new WPMLS_Translator();
 	}
 
 	/**

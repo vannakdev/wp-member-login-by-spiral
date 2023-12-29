@@ -86,7 +86,7 @@ add_action('admin_enqueue_scripts', function(string $hookSuffix) {
 }, 10, 1);
 
 
-function add_custom_plugin_block_categories( $categories ) {
+function wpmls_add_custom_plugin_block_categories( $categories ) {
 	$plugin_slug = get_option('sml_version') == 1 ? "spiral-member-login" : 'spiral-v2-member-login';
 	return array_merge(
         $categories,
@@ -98,4 +98,4 @@ function add_custom_plugin_block_categories( $categories ) {
         ]
     );
 }
-add_action( 'block_categories_all', 'add_custom_plugin_block_categories', 10, 2 );
+add_action( 'block_categories_all', 'wpmls_add_custom_plugin_block_categories', 10, 2 );

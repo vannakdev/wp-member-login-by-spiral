@@ -30,8 +30,8 @@ if (!class_exists('SpiralPlatform_Api')) :
 
     public $app_id        = null;
     public $db_id         = null;
-    public $site_id       = null;
-    public $authentication_id   = null;
+    public $wpmls_site_id       = null;
+    public $wpmls_authentication_id   = null;
     private $user_data     = null;
     private $area_status     = null;
 
@@ -40,12 +40,12 @@ if (!class_exists('SpiralPlatform_Api')) :
       $this->token         = $token;
     }
 
-    public function set_options($app_id, $db_id, $site_id, $authentication_id)
+    public function set_options($app_id, $db_id, $wpmls_site_id, $wpmls_authentication_id)
     {
       $this->app_id        = $app_id;
       $this->db_id         = $db_id;
-      $this->site_id        = $site_id;
-      $this->authentication_id   = $authentication_id;
+      $this->wpmls_site_id        = $wpmls_site_id;
+      $this->wpmls_authentication_id   = $wpmls_authentication_id;
     }
 
     public function request_spiral_api($method, $api_path, $params = null)
@@ -102,7 +102,7 @@ if (!class_exists('SpiralPlatform_Api')) :
       return  $this->api_url . $path;
     }
 
-    public function login_area($site_id, $authentication_id, $id = null, $password = null)
+    public function login_area($wpmls_site_id, $wpmls_authentication_id, $id = null, $password = null)
     {
       $parameters = array();
 
@@ -113,7 +113,7 @@ if (!class_exists('SpiralPlatform_Api')) :
         $parameters["password"] = $password;
       }
 
-      $result = $this->request_spiral_api('POST', "/sites/$site_id/authentications/$authentication_id/login", $parameters);
+      $result = $this->request_spiral_api('POST', "/sites/$wpmls_site_id/authentications/$wpmls_authentication_id/login", $parameters);
       return $result;
     }
 
@@ -123,14 +123,14 @@ if (!class_exists('SpiralPlatform_Api')) :
       if ($token) {
         $parameters["token"] = $token;
       }
-      $site_id = $this->site_id;
-      $authentication_id = $this->authentication_id;
+      $wpmls_site_id = $this->wpmls_site_id;
+      $wpmls_authentication_id = $this->wpmls_authentication_id;
 
-      $this->request_spiral_api('POST', "/sites/$site_id/authentications/$authentication_id/logout", $parameters);
+      $this->request_spiral_api('POST', "/sites/$wpmls_site_id/authentications/$wpmls_authentication_id/logout", $parameters);
       $this->area_status = null;
     }
 
-    public function get_area_status($site_id, $authentication_id, $session_token = null)
+    public function get_area_status($wpmls_site_id, $wpmls_authentication_id, $session_token = null)
     {
       // To prevent on many request
       if ($this->area_status !== null) {
@@ -141,7 +141,7 @@ if (!class_exists('SpiralPlatform_Api')) :
         $parameters["token"] = $session_token;
       }
 
-      $result = $this->request_spiral_api('POST', "/sites/$site_id/authentications/$authentication_id/status", $parameters);
+      $result = $this->request_spiral_api('POST', "/sites/$wpmls_site_id/authentications/$wpmls_authentication_id/status", $parameters);
 
       if ($result !== null && isset($result['status'])) {
         $this->area_status = $result['status'];
@@ -159,10 +159,10 @@ if (!class_exists('SpiralPlatform_Api')) :
         $parameters["path"] = $path;
       }
 
-      $site_id = $this->site_id;
-      $authentication_id = $this->authentication_id;
+      $wpmls_site_id = $this->wpmls_site_id;
+      $wpmls_authentication_id = $this->wpmls_authentication_id;
 
-      $result = $this->request_spiral_api('POST', "/sites/$site_id/authentications/$authentication_id/oneTimeLogin", $parameters);
+      $result = $this->request_spiral_api('POST', "/sites/$wpmls_site_id/authentications/$wpmls_authentication_id/oneTimeLogin", $parameters);
 
       if (isset($result['url'])) {
         return $result['url'];
@@ -173,11 +173,11 @@ if (!class_exists('SpiralPlatform_Api')) :
     /**
      * @return null||array(fields=>Array(), items=>Array(), options=>Array(), prevOffset=>null,nextOffset=>null, totalCount=>null)
      */
-    public function get_user_data($appid, $dbid, $identification_key, $user_key)
+    public function get_user_data($appid, $dbid, $wpmls_identification_key, $user_key)
     {
       $parameters = array();
       $fields = $this->get_db_columns($appid, $dbid);
-      $parameters["where"] = "@$identification_key='$user_key'";
+      $parameters["where"] = "@$wpmls_identification_key='$user_key'";
 
 
       $result = $this->request_spiral_api('get', "/apps/$appid/dbs/$dbid/records", $parameters);
@@ -238,11 +238,11 @@ if (!class_exists('SpiralPlatform_Api')) :
       }
     }
 
-    public function get_extraction_rule($area_title, $db_title, $session_id, $id, $select_name)
+    public function get_extraction_rule($wpmls_area_title, $db_title, $session_id, $id, $select_name)
     {
     }
 
-    public function get_table_data($area_title, $session_id, $search_title, $options = null)
+    public function get_table_data($wpmls_area_title, $session_id, $search_title, $options = null)
     {
     }
 
