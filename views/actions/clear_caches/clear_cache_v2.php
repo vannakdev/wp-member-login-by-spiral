@@ -13,10 +13,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
       @setcookie('is_login', false, time() - 1800, COOKIEPATH, COOKIE_DOMAIN, TRUE, TRUE); // DELETE COOKIE
       $result = $this->spiral2->logout($sml_sid);
     }
-    if (get_option('clear_cached') == "unclear") {
-      update_option('clear_cached', "cleared");
+    if (get_option('wpmls_clear_cached') == "unclear") {
+      update_option('wpmls_clear_cached', "cleared");
     } else {
-      add_option('clear_cached', "cleared");
+      add_option('wpmls_clear_cached', "cleared");
     }
     $_SESSION["message"] = $this->translator->sml_translate('cache_cleared');
   }

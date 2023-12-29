@@ -7,7 +7,7 @@
  * @author    PIPED BITS Co.,Ltd.
  */
 
-if (!class_exists('Spiral_Member_Login_Template')) :
+if (!class_exists('WPMLS_Spiral_Member_Login_Template')) :
 	/*
  * Spiral Member Login Template class
  *
@@ -15,7 +15,7 @@ if (!class_exists('Spiral_Member_Login_Template')) :
  *
  * @since 1.0.0
  */
-	class Spiral_Member_Login_Template extends Spiral_Member_Login_Base
+	class WPMLS_Spiral_Member_Login_Template extends WPMLS_Spiral_Member_Login_Base
 	{
 		/**
 		 * Holds active instance flag
@@ -36,7 +36,7 @@ if (!class_exists('Spiral_Member_Login_Template')) :
 		 */
 		public function __construct($options = '')
 		{
-			$this->translator = 	new Translator();
+			$this->translator = 	new WPMLS_Translator();
 			$options = wp_parse_args($options);
 			$options = shortcode_atts(self::default_options(), $options);
 
@@ -522,7 +522,7 @@ if (!class_exists('Spiral_Member_Login_Template')) :
 		public function the_auth_form_url()
 		{
 			$spiral_member_login = Spiral_Member_Login::get_instance();
-			$user_name = $spiral_member_login->get_option('auth_form_url');
+			$user_name = $spiral_member_login->get_option('wpmls_auth_form_url');
 			if ($user_name) {
 				echo esc_attr($user_name) . '&site=' . urlencode(get_home_url()) . '/';
 			}

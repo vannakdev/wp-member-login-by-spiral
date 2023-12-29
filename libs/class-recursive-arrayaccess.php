@@ -14,7 +14,7 @@
  *
  * @package WordPress
  */
-class Recursive_ArrayAccess implements ArrayAccess {
+class WPMLS_Recursive_ArrayAccess implements ArrayAccess {
 	/**
 	 * Internal data collection.
 	 *

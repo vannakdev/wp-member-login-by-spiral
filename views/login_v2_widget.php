@@ -116,8 +116,8 @@ $is_taget_blank = $this->get_option('enable_blank_tab');
 		</p>
 		<p class="submit">
 
-			<input type="hidden" name="site_id" value="<?php echo get_option('spiral_v2_member_login')["site_id"]; ?>" />
-			<input type="hidden" name="authentication_id" value="<?php echo get_option('spiral_v2_member_login')["authentication_id"]; ?>" />
+			<input type="hidden" name="wpmls_site_id" value="<?php echo get_option('spiral_v2_member_login')["wpmls_site_id"]; ?>" />
+			<input type="hidden" name="wpmls_authentication_id" value="<?php echo get_option('spiral_v2_member_login')["wpmls_authentication_id"]; ?>" />
 			<button class="sml-login-submit log-in-btn" type="submit" name="wp-submit" id="wp-submit<?php $template->the_template_num(); ?>"><span><?php _e('Log in'); ?></span></button>
 			<input type="hidden" name="template_num" value="<?php $template->the_template_num(); ?>" />
 			<input type="hidden" name="redirect_to" value="<?php $template->the_redirect_url(); ?>" />

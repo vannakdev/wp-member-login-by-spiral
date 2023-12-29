@@ -2,9 +2,9 @@
 /**
  * Spiral_Member_Login Session
  *
- * This is a wrapper class for WP_Session / PHP $_SESSION and handles the storage
+ * This is a wrapper class for WPMLS_Session / PHP $_SESSION and handles the storage
  *
- * Partly based on WP_Session by Eric Mann.
+ * Partly based on WPMLS_Session by Eric Mann.
  *
  * @package   Spiral_Member_Login
  * @author    PIPED BITS Co.,Ltd.
@@ -13,13 +13,13 @@
 // Exit if accessed directly
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-if ( ! class_exists( 'Spiral_Member_Login_Session' ) ) :
+if ( ! class_exists( 'WPMLS_Spiral_Member_Login_Session' ) ) :
 /**
- * Spiral_Member_Login_Session Class
+ * WPMLS_Spiral_Member_Login_Session Class
  *
  * @since 1.0.0
  */
-class Spiral_Member_Login_Session {
+class WPMLS_Spiral_Member_Login_Session {
 
 	/**
 	 * Holds our session data
@@ -32,7 +32,7 @@ class Spiral_Member_Login_Session {
 
 
 	/**
-	 * Whether to use PHP $_SESSION or WP_Session
+	 * Whether to use PHP $_SESSION or WPMLS_Session
 	 *
 	 * PHP $_SESSION is opt-in only by defining the SML_USE_PHP_SESSIONS constant
 	 *
@@ -46,7 +46,7 @@ class Spiral_Member_Login_Session {
 	/**
 	 * Get things started
 	 *
-	 * Defines our WP_Session constants, includes the necessary libraries and
+	 * Defines our WPMLS_Session constants, includes the necessary libraries and
 	 * retrieves the WP Session instance
 	 *
 	 * @since 1.0.0
@@ -63,15 +63,15 @@ class Spiral_Member_Login_Session {
 
 		} else {
 
-			// Use WP_Session (default)
+			// Use WPMLS_Session (default)
 
 			if ( ! defined( 'WP_SESSION_COOKIE' ) )
 				define( 'WP_SESSION_COOKIE', 'sml_wp_session' );
 
-			if ( ! class_exists( 'Recursive_ArrayAccess' ) )
+			if ( ! class_exists( 'WPMLS_Recursive_ArrayAccess' ) )
 				require_once plugin_dir_path( __DIR__ ) . 'libs/class-recursive-arrayaccess.php';
 
-			if ( ! class_exists( 'WP_Session' ) ) {
+			if ( ! class_exists( 'WPMLS_Session' ) ) {
 				require_once plugin_dir_path( __DIR__ ) . 'libs/class-wp-session.php';
 				require_once plugin_dir_path( __DIR__ ) . 'libs/wp-session.php';
 			}
@@ -89,7 +89,7 @@ class Spiral_Member_Login_Session {
 
 
 	/**
-	 * Setup the WP_Session instance
+	 * Setup the WPMLS_Session instance
 	 *
 	 * @access public
 	 * @since 1.0.0
@@ -99,7 +99,7 @@ class Spiral_Member_Login_Session {
 		if( $this->use_php_sessions )
 			$this->session = isset( $_SESSION['sml'] ) && is_array( $_SESSION['sml'] ) ? $_SESSION['sml'] : array();
 		else
-			$this->session = WP_Session::get_instance();
+			$this->session = WPMLS_Session::get_instance();
 
 		return $this->session;
 	}

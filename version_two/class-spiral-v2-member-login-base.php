@@ -6,7 +6,7 @@
  * @author    PIPED BITS Co.,Ltd.
  */
 
-if ( ! class_exists( 'Spiral_Member_Login_Base' ) ) :
+if ( ! class_exists( 'WPMLS_Spiral_Member_Login_Base' ) ) :
 /*
  * Base class
  *
@@ -14,7 +14,7 @@ if ( ! class_exists( 'Spiral_Member_Login_Base' ) ) :
  *
  * @since 1.0.0
  */
-abstract class Spiral_Member_Login_Base {
+abstract class WPMLS_Spiral_Member_Login_Base {
 
 	/**
 	 * Holds options key
