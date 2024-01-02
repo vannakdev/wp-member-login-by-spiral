@@ -1,4 +1,5 @@
 <?php
+
 /**
  * WordPress session managment.
  *
@@ -15,7 +16,8 @@
  *
  * @return int
  */
-function wpmls_session_cache_expire() {
+function wpmls_session_cache_expire()
+{
 	$wp_session = WPMLS_Session::get_instance();
 
 	return $wp_session->cache_expiration();
@@ -24,7 +26,8 @@ function wpmls_session_cache_expire() {
 /**
  * Alias of wpmls_session_write_close()
  */
-function wpmls_wp_session_commit() {
+function wpmls_wp_session_commit()
+{
 	wpmls_session_write_close();
 }
 
@@ -33,10 +36,11 @@ function wpmls_wp_session_commit() {
  *
  * @param string $data
  */
-function wpmls_session_decode( $data ) {
+function wpmls_session_decode($data)
+{
 	$wp_session = WPMLS_Session::get_instance();
 
-	return $wp_session->json_in( $data );
+	return $wp_session->json_in($data);
 }
 
 /**
@@ -44,7 +48,8 @@ function wpmls_session_decode( $data ) {
  *
  * @return string
  */
-function wpmls_session_encode() {
+function wpmls_session_encode()
+{
 	$wp_session = WPMLS_Session::get_instance();
 
 	return $wp_session->json_out();
@@ -57,10 +62,11 @@ function wpmls_session_encode() {
  *
  * @return bool
  */
-function wpmls_session_regenerate_id( $delete_old_session = false ) {
+function wpmls_session_regenerate_id($delete_old_session = false)
+{
 	$wp_session = WPMLS_Session::get_instance();
 
-	$wp_session->regenerate_id( $delete_old_session );
+	$wp_session->regenerate_id($delete_old_session);
 
 	return true;
 }
@@ -72,23 +78,25 @@ function wpmls_session_regenerate_id( $delete_old_session = false ) {
  *
  * @return bool
  */
-function wpmls_session_start() {
+function wpmls_session_start()
+{
 	$wp_session = WPMLS_Session::get_instance();
-	do_action( 'wpmls_session_start' );
+	do_action('wpmls_session_start');
 
 	return $wp_session->session_started();
 }
-add_action( 'plugins_loaded', 'wpmls_session_start' );
+add_action('plugins_loaded', 'wpmls_session_start');
 
 /**
  * Return the current session status.
  *
  * @return int
  */
-function wpmls_session_status() {
+function wpmls_session_status()
+{
 	$wp_session = WPMLS_Session::get_instance();
 
-	if ( $wp_session->session_started() ) {
+	if ($wp_session->session_started()) {
 		return PHP_SESSION_ACTIVE;
 	}
 
@@ -98,22 +106,23 @@ function wpmls_session_status() {
 /**
  * Unset all session variables.
  */
-function wpmls_session_unset() {
+function wpmls_session_unset()
+{
 	$wp_session = WPMLS_Session::get_instance();
-
 	$wp_session->reset();
 }
 
 /**
  * Write session data and end session
  */
-function wpmls_session_write_close() {
+function wpmls_session_write_close()
+{
 	$wp_session = WPMLS_Session::get_instance();
 
 	$wp_session->write_data();
-	do_action( 'wpmls_wp_session_commit' );
+	do_action('wpmls_wp_session_commit');
 }
-add_action( 'shutdown', 'wpmls_session_write_close' );
+add_action('shutdown', 'wpmls_session_write_close');
 
 /**
  * Clean up expired sessions by removing data and their expiration entries from
@@ -122,24 +131,25 @@ add_action( 'shutdown', 'wpmls_session_write_close' );
  * This method should never be called directly and should instead be triggered as part
  * of a scheduled task or cron job.
  */
-function wpmls_session_cleanup() {
+function wpmls_session_cleanup()
+{
 	global $wpdb;
 
-	if ( defined( 'WP_SETUP_CONFIG' ) ) {
+	if (defined('WP_SETUP_CONFIG')) {
 		return;
 	}
 
-	if ( ! defined( 'WP_INSTALLING' ) ) {
-		$expiration_keys = $wpdb->get_results( "SELECT option_name, option_value FROM $wpdb->options WHERE option_name LIKE '_wp_session_expires_%'" );
+	if (!defined('WP_INSTALLING')) {
+		$expiration_keys = $wpdb->get_results("SELECT option_name, option_value FROM $wpdb->options WHERE option_name LIKE '_wp_session_expires_%'");
 
-		$now = current_time( 'timestamp' );
+		$now = current_time('timestamp');
 		$expired_sessions = array();
 
-		foreach( $expiration_keys as $expiration ) {
+		foreach ($expiration_keys as $expiration) {
 			// If the session has expired
-			if ( $now > intval( $expiration->option_value ) ) {
+			if ($now > intval($expiration->option_value)) {
 				// Get the session ID by parsing the option_name
-				$session_id = substr( $expiration->option_name, 20 );
+				$session_id = substr($expiration->option_name, 20);
 
 				$expired_sessions[] = $expiration->option_name;
 				$expired_sessions[] = "_wp_session_$session_id";
@@ -147,23 +157,24 @@ function wpmls_session_cleanup() {
 		}
 
 		// Delete all expired sessions in a single query
-		if ( ! empty( $expired_sessions ) ) {
-			$option_names = implode( "','", $expired_sessions );
-			$wpdb->query( "DELETE FROM $wpdb->options WHERE option_name IN ('$option_names')" );
+		if (!empty($expired_sessions)) {
+			$option_names = implode("','", $expired_sessions);
+			$wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->options} WHERE option_name IN %s",  $option_names));
 		}
 	}
 
 	// Allow other plugins to hook in to the garbage collection process.
-	do_action( 'wpmls_session_cleanup' );
+	do_action('wpmls_session_cleanup');
 }
-add_action( 'wp_session_garbage_collection', 'wpmls_session_cleanup' );
+add_action('wp_session_garbage_collection', 'wpmls_session_cleanup');
 
 /**
  * Register the garbage collector as a twice daily event.
  */
-function wpmls_session_register_garbage_collection() {
-	if ( ! wp_next_scheduled( 'wp_session_garbage_collection' ) ) {
-		wp_schedule_event( current_time( 'timestamp' ), 'twicedaily', 'wp_session_garbage_collection' );
+function wpmls_session_register_garbage_collection()
+{
+	if (!wp_next_scheduled('wp_session_garbage_collection')) {
+		wp_schedule_event(current_time('timestamp'), 'twicedaily', 'wp_session_garbage_collection');
 	}
 }
-add_action( 'wp', 'wpmls_session_register_garbage_collection' );
+add_action('wp', 'wpmls_session_register_garbage_collection');
