@@ -177,7 +177,7 @@ if (!class_exists('Spiral_Member_Login')) :
 
 			if ($this->is_settings_imcomplete())
 				return null;
-			
+
 			$this->wpmls_modify_option_keys();
 		}
 
@@ -411,35 +411,33 @@ if (!class_exists('Spiral_Member_Login')) :
 		{
 			$wpmls_is_enable  = isset(get_option($this->options_key)['wpmls_related_web']) ? get_option($this->options_key)['wpmls_related_web']['wpmls_is_enable'] : false;
 			$is_checked = $wpmls_is_enable ? 'checked' : '';
-?>
-			<div>
-				<input id="wpmls_is_enable" type="checkbox" pattern="https?://.+" name="wpmls_is_enable" type="text" class="sml_url_field sml_member_logout_url_field advance-config" value="" <?php echo $is_checked; ?> />
-			</div>
-			<script>
-				const checkbox = document.querySelector("#wpmls_is_enable");
+			?>
+				<div>
+					<input id="wpmls_is_enable" type="checkbox" pattern="https?://.+" name="wpmls_is_enable" type="text" class="sml_url_field sml_member_logout_url_field advance-config" value="" <?php echo $is_checked; ?> />
+				</div>
+				<script>
+					const checkbox = document.querySelector("#wpmls_is_enable");
 
-				checkbox.addEventListener("click", function() {
-					if (checkbox.checked) {
-						checkbox.value = 1;
-					} else {
-						checkbox.value = 0;
-					}
-				});
-			</script>
-
-		<?php
+					checkbox.addEventListener("click", function() {
+						if (checkbox.checked) {
+							checkbox.value = 1;
+						} else {
+							checkbox.value = 0;
+						}
+					});
+				</script>
+			<?php
 		}
 		public function settings_field_param_name()
 		{
 			$param_name = isset(get_option($this->options_key)['wpmls_related_web']['atts']) ? get_option($this->options_key)['wpmls_related_web']['atts']['param_name'] : '';
-		?>
-			<div>
-				<div class="" id="web_id">
-					<input name="param_name" type="text" class="sml_login_id_label_jp basic_config" value="<?php echo $param_name; ?>" />
+			?>
+				<div>
+					<div class="" id="web_id">
+						<input name="param_name" type="text" class="sml_login_id_label_jp basic_config" value="<?php echo $param_name; ?>" />
+					</div>
 				</div>
-			</div>
-
-		<?php
+			<?php
 		}
 		public function settings_field_filed_name()
 		{
