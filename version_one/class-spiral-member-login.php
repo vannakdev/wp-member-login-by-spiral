@@ -700,14 +700,10 @@ if (!class_exists('Spiral_Member_Login')) :
 							if ($page_id) {
 								$profile_option_name = 'page_url_' . $sml_sid . '_' . $this->request_action . '_page_id_' . $page_id;
 								if (get_option($profile_option_name)) {
-									var_dump("1");
-									die;
 									$profile_url = get_option($profile_option_name);
 									wp_redirect($this->decrypt_key($profile_url, SECURE_AUTH_KEY));
 									exit;
 								} else {
-									var_dump("2");
-									die;
 									$wpmls_area_title = $this->get_option('wpmls_area_title');
 									$result = $this->spiral->get_area_mypage($wpmls_area_title, $sml_sid, $page_id);
 									if ($result) {
