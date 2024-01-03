@@ -109,8 +109,8 @@ $is_taget_blank = $this->get_option('enable_blank_tab');
 			<input required type="password" name="password" id="user_pass<?php $template->the_template_num(); ?>" class="input" value="" size="20" />
 		</p>
 		<p class="submit">
-			<input type="hidden" name="wpmls_identification_key" value="<?php echo get_option('spiral_member_login')["wpmls_member_identification_key"]; ?>" />
-			<input type="hidden" name="wpmls_area_title" value="<?php echo get_option('spiral_member_login')["wpmls_area_title"]; ?>" />
+			<input type="hidden" name="identification_key" value="<?php echo get_option('spiral_member_login')["wpmls_member_identification_key"]; ?>" />
+			<input type="hidden" name="area_title" value="<?php echo get_option('spiral_member_login')["wpmls_area_title"]; ?>" />
 			<input type="hidden" name="custom_module" value="<?php echo get_option('spiral_member_login')["wpmls_custom_module_path"]; ?>" />
 			<button class="sml-login-submit log-in-btn" type="submit" name="wp-submit" id="wp-submit<?php $template->the_template_num(); ?>"><span><?php _e('Log in'); ?></span></button>
 			<input type="hidden" name="template_num" value="<?php $template->the_template_num(); ?>" />

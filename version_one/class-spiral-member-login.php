@@ -179,9 +179,10 @@ if (!class_exists('Spiral_Member_Login')) :
 
 			$this->translator 			= 	new WPMLS_Translator();
 
+			if(!isset($this->get_options()['wpmls_api_token']))
+				$this->wpmls_modify_option_keys();
 			if ($this->is_settings_imcomplete())
 				return null;
-			$this->wpmls_modify_option_keys();
 		}
 
 		public function wpmls_modify_option_keys()
