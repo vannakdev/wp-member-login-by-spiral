@@ -179,10 +179,12 @@ if (!class_exists('Spiral_Member_Login')) :
 
 			$this->translator 			= 	new WPMLS_Translator();
 
-			if(!isset($this->get_options()['wpmls_api_token']))
-				$this->wpmls_modify_option_keys();
-			if ($this->is_settings_imcomplete())
+			if ($this->is_settings_imcomplete()){
 				return null;
+			}else{
+				if(!isset($this->get_options()['wpmls_api_token']))
+				$this->wpmls_modify_option_keys();
+			}
 		}
 
 		public function wpmls_modify_option_keys()
@@ -573,12 +575,10 @@ if (!class_exists('Spiral_Member_Login')) :
 		public function template_redirect()
 		{
 			$this->request_action = isset($_REQUEST['action']) ? sanitize_key($_REQUEST['action']) : '';
-
 			if (!$this->request_action && self::is_sml_page()) {
 				$this->request_action = self::get_page_action(get_the_ID());
 			}
 			$this->request_template_num = isset($_REQUEST['template_num']) ? sanitize_key($_REQUEST['template_num']) : 0;
-
 			if ($this->is_settings_imcomplete()) {
 				if ($this->request_action) {
 					wp_redirect(get_home_url('/'));
@@ -696,7 +696,6 @@ if (!class_exists('Spiral_Member_Login')) :
 					case 'profile':
 						$page_id = $this->get_option($this->request_action . '_page_id');
 						$sml_sid = $this->session->get('sml_sid');
-
 						if ($this->is_logged_in()) {
 							if ($page_id) {
 								$profile_option_name = 'page_url_' . $sml_sid . '_' . $this->request_action . '_page_id_' . $page_id;
