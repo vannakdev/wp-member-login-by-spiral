@@ -661,7 +661,7 @@ if (!class_exists('Spiral_Member_Login')) :
 					case 'resetpass':
 					case 'withdrawal':
 
-						$page_id = $this->get_option($this->request_action . '_page_id');
+						$page_id = $this->get_option('wpmls_'. $this->request_action . '_page_id');
 						$sml_sid = $this->session->get('sml_sid');
 
 						if ($this->is_logged_in()) {
@@ -694,7 +694,7 @@ if (!class_exists('Spiral_Member_Login')) :
 						}
 						break;
 					case 'profile':
-						$page_id = $this->get_option($this->request_action . '_page_id');
+						$page_id = $this->get_option('wpmls_'. $this->request_action . '_page_id');
 						$sml_sid = $this->session->get('sml_sid');
 						if ($this->is_logged_in()) {
 							if ($page_id) {
@@ -1790,7 +1790,7 @@ if (!class_exists('Spiral_Member_Login')) :
 				$options['wpmls_area_title']                   = sanitize_text_field(trim($_POST[$this->options_key]['wpmls_area_title']));
 				$options['wpmls_custom_module_path']           = sanitize_text_field(trim($_POST[$this->options_key]['wpmls_custom_module_path']));
 				$options['wpmls_auth_form_url']                = sanitize_text_field(trim($_POST[$this->options_key]['wpmls_auth_form_url']));
-				$options['member_logout_url']            = sanitize_text_field(trim($_POST[$this->options_key]['member_logout_url']));
+				$options['member_logout_url']            	   = sanitize_text_field(trim($_POST[$this->options_key]['member_logout_url']));
 				$options['wpmls_register_url']                 = sanitize_text_field(trim($_POST[$this->options_key]['wpmls_register_url']));
 				$options['wpmls_lostpassword_url']             = sanitize_text_field(trim($_POST[$this->options_key]['wpmls_lostpassword_url']));
 				$options['wpmls_profile_page_id']              = ($_POST[$this->options_key]['wpmls_profile_page_id'] != '') ? absint(trim($_POST[$this->options_key]['wpmls_profile_page_id'])) : '';
@@ -1798,8 +1798,8 @@ if (!class_exists('Spiral_Member_Login')) :
 				$options['wpmls_withdrawal_page_id']           = ($_POST[$this->options_key]['wpmls_withdrawal_page_id'] != '') ? absint(trim($_POST[$this->options_key]['wpmls_withdrawal_page_id'])) : '';
 				$options['wpmls_member_list_search_title']     = sanitize_text_field(trim($_POST[$this->options_key]['wpmls_member_list_search_title']));
 				$options['wpmls_default_name_key']             = sanitize_text_field(trim($_POST[$this->options_key]['wpmls_default_name_key']));
-				$options['login_id_label_jp']            = sanitize_text_field(trim($_POST[$this->options_key]['login_id_label_jp']));
-				$options['login_id_label_en']            = sanitize_text_field(trim($_POST[$this->options_key]['login_id_label_en']));
+				$options['login_id_label_jp']            	   = sanitize_text_field(trim($_POST[$this->options_key]['login_id_label_jp']));
+				$options['login_id_label_en']                  = sanitize_text_field(trim($_POST[$this->options_key]['login_id_label_en']));
 
 				if (!isset($options['related_web'])) {
 					$options['related_web'] = [

@@ -671,7 +671,7 @@ if (!class_exists('Spiral_Member_Login')) :
 						break;
 					case 'resetpass':
 					case 'withdrawal':
-						$path = $this->get_option($this->request_action . '_page_id');
+						$path = $this->get_option('wpmls_'. $this->request_action . '_page_id');
 						if ($this->is_logged_in()) {
 							$token = $this->decrypt_key($this->session->get('sml_sid'), SECURE_AUTH_KEY);
 							if ($path) {
@@ -713,7 +713,7 @@ if (!class_exists('Spiral_Member_Login')) :
 						}
 						break;
 					case 'profile':
-						$path = $this->get_option($this->request_action . '_page_id');
+						$path = $this->get_option('wpmls_'. $this->request_action . '_page_id');
 						if ($this->is_logged_in()) {
 							$token = $this->decrypt_key($this->session->get('sml_sid'), SECURE_AUTH_KEY);
 							if ($path) {
