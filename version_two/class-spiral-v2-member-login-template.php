@@ -523,7 +523,7 @@ if (!class_exists('WPMLS_Spiral_Member_Login_Template')) :
 			$spiral_member_login = Spiral_Member_Login::get_instance();
 			$user_name = $spiral_member_login->get_option('wpmls_auth_form_url');
 			if ($user_name) {
-				echo esc_attr($user_name) . '&site=' . urlencode(get_home_url()) . '/';
+				echo esc_attr($user_name) . '?site=' . urlencode(get_home_url()) . '/';
 			}
 		}
 
