@@ -136,7 +136,7 @@ class WPMLS_Spiral_Member_Login_Widget extends WP_Widget {
 		echo '<p><input name="' . $this->get_field_name( 'show_name' ) . '" type="checkbox" id="' . $this->get_field_id( 'show_name' ) . '" value="1" ' . $is_checked . '/> <label for="' . $this->get_field_id( 'show_name' ) . '">' . __( $this->translator->sml_translate('show_name'), Spiral_Member_Login::domain ) . '</label></p>' . "\n";
 
 		$is_checked = ( empty( $instance['show_reg_link'] ) ) ? '' : 'checked="checked" ';
-		echo '<p><input name="' . $this->get_field_name( 'show_reg_link' ) . '" type="checkbox" id="' . $this->get_field_id( 'show_reg_link' ) . '" value="1" ' . $is_checked . '/> <label for="' . $this->get_field_id( 'show_reg_link' ) . '">' . __( $this->translator->sml_translate('show_register_link'), Spiral_Member_Login::domain ) . '</label></p>' . "\n";
+		echo '<p><input name="' . esc_attr( $this->get_field_name( 'show_reg_link' ) ) . '" type="checkbox" id="' . esc_attr( $this->get_field_id( 'show_reg_link' ) ) . '" value="1" ' . $is_checked . '/> <label for="' . esc_attr( $this->get_field_id( 'show_reg_link' ) ) . '">' . esc_html__( $this->translator->sml_translate('show_register_link'), Spiral_Member_Login::domain ) . '</label></p>' . "\n";
 
 		$is_checked = ( empty( $instance['show_pass_link'] ) ) ? '' : 'checked="checked" ';
 		echo '<p><input name="' . $this->get_field_name( 'show_pass_link' ) . '" type="checkbox" id="' . $this->get_field_id( 'show_pass_link' ) . '" value="1" ' . $is_checked . '/> <label for="' . $this->get_field_id( 'show_pass_link' ) . '">' . __( $this->translator->sml_translate('show_lost_password_link'), Spiral_Member_Login::domain ) . '</label></p>' . "\n";
