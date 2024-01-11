@@ -471,7 +471,7 @@ if (!class_exists('WPMLS_Spiral_Member_Login_Template')) :
 			echo '<ul class="sml-user-links">';
 
 			foreach ((array) $this->get_user_links() as $link) {
-				echo '<li class="' . $link['class'] . '"><a target="_blank" href="' . esc_url($link['url']) . '">' . __($this->translator->sml_translate($link['title']),"spiral-member-login-2") . '</a></li>' . "\n";
+				echo '<li class="' . $link['class'] . '"><a href="' . esc_url($link['url']) . '">' . __($this->translator->sml_translate($link['title']),"spiral-member-login-2") . '</a></li>' . "\n";
 			}
 			echo '<li class="sml-user-links-logout"><a href="' . esc_url(Spiral_Member_Login::get_page_link('logout')) . '">' .  $this->translator->sml_translate('logout') . '</a></li>' . "\n";
 			echo '</ul>';
